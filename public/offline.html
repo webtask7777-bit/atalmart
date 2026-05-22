@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Offline — Atalmart</title>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#FF6B00" />
+    <style>
+      :root {
+        --saffron: #ff6b00;
+        --brown: #1a1a1a;
+        --brown-light: #4a4a4a;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #fff;
+        color: var(--brown);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+      }
+      .logo {
+        width: 72px;
+        height: 72px;
+        background: var(--saffron);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 40px;
+        font-weight: 800;
+        margin-bottom: 24px;
+      }
+      h1 {
+        font-size: 22px;
+        margin: 0 0 8px;
+      }
+      p {
+        color: var(--brown-light);
+        font-size: 14px;
+        margin: 0 0 28px;
+        max-width: 320px;
+        line-height: 1.5;
+      }
+      button {
+        background: var(--saffron);
+        color: #fff;
+        border: none;
+        padding: 12px 28px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:active { transform: scale(0.97); }
+    </style>
+  </head>
+  <body>
+    <div class="logo">A</div>
+    <h1>You're offline</h1>
+    <p>Atalmart ko load karne ke liye internet zaroori hai. Apna connection check karke retry karein.</p>
+    <button onclick="location.reload()">Retry</button>
+  </body>
+</html>

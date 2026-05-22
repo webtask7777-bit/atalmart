@@ -36,6 +36,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# image watcher staging (track README only)
+/incoming-images/*
+!/incoming-images/README.md
+
+# generated exports (purchase orders, reports — regenerated on demand)
+/exports/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
