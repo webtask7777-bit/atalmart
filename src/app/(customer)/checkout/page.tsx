@@ -29,7 +29,11 @@ import {
 import { useSettings } from "@/lib/store/settings";
 import { useUserPincodeStore } from "@/lib/store/user-pincode";
 import { validatePhone10 } from "@/lib/validators";
-import { payWithRazorpay, RazorpayError } from "@/lib/razorpay-checkout";
+import {
+  payWithRazorpay,
+  RazorpayError,
+  type RazorpayPayResult,
+} from "@/lib/razorpay-checkout";
 import { toast } from "sonner";
 import { showLocalOrderNotification } from "@/components/customer/notification-prompt";
 
@@ -43,7 +47,7 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotal, clearCart } = useCartStore();
   const cartHydrated = useCartHydrated();
-  const { user, isDemo } = useAuth();
+  const { user, profile, isDemo } = useAuth();
   const coupon = useCouponStore((s) => s.applied);
   const clearCoupon = useCouponStore((s) => s.clear);
   const myCouponUsage = useCouponStore((s) => s.myUsage);
@@ -81,6 +85,15 @@ export default function CheckoutPage() {
       ? Math.min(walletBalance, beforeWallet)
       : 0;
   const total = Math.max(0, beforeWallet - walletApplied);
+
+  // Prefill recipient + phone from the logged-in profile. Profile arrives
+  // async after mount, so this fills once it lands — but never overwrites
+  // anything the customer has already typed.
+  useEffect(() => {
+    if (!profile) return;
+    setRecipientName((v) => v || profile.name || "");
+    setPhone((v) => v || profile.phone.replace(/\D/g, "").slice(-10));
+  }, [profile]);
 
   // Redirect to cart if empty — only after hydration finishes, and not when we've
   // just placed an order (clearCart empties items right before we push to /track/{id})
@@ -232,6 +245,7 @@ export default function CheckoutPage() {
     // authoritative price (priceData.total), never the client preview. If the
     // gateway isn't configured or the customer cancels, we abort without
     // placing the order. COD skips this entirely.
+    let paymentProof: RazorpayPayResult | undefined;
     if (paymentMethod === "online" && priceData.total > 0) {
       if (!razorpayEnabled) {
         toast.error(
@@ -241,7 +255,7 @@ export default function CheckoutPage() {
         return;
       }
       try {
-        await payWithRazorpay({
+        paymentProof = await payWithRazorpay({
           amount: priceData.total,
           businessName: "Atalmart",
           customerName: finalName,
@@ -277,6 +291,17 @@ export default function CheckoutPage() {
       delivery_fee: priceData.deliveryFee,
       discount: priceData.couponDiscount,
       coupon_code: coupon?.code,
+      // Server re-prices + re-verifies from these — client totals above are
+      // ignored by /api/orders/place.
+      walletApplied: priceData.walletApplied,
+      pincode: extractedPincode,
+      payment: paymentProof
+        ? {
+            razorpay_order_id: paymentProof.razorpay_order_id,
+            razorpay_payment_id: paymentProof.razorpay_payment_id,
+            razorpay_signature: paymentProof.razorpay_signature,
+          }
+        : undefined,
     });
 
     if (error || !order) {
@@ -298,7 +323,7 @@ export default function CheckoutPage() {
     // Fire local OS notification if user enabled it
     showLocalOrderNotification(
       "Order placed! 🎉",
-      `Order #${order.id.slice(0, 8)} — ₹${total}. We'll deliver in 10 min.`,
+      `Order #${order.id.slice(0, 8)} — ₹${total}. We'll deliver it quickly.`,
       `order-${order.id}`,
     );
     router.push(`/track/${order.id}`);
@@ -543,13 +568,23 @@ export default function CheckoutPage() {
         )}
       </section>
 
+      {settings.storeStatus !== "open" && (
+        <p className="text-center text-xs font-semibold text-amber-600 -mb-2">
+          {settings.storeStatus === "opening_soon"
+            ? "Store abhi launch nahi hua — orders jaldi shuru honge."
+            : "Heavy rush ke kaaran naye orders kuch der ke liye paused hain."}
+        </p>
+      )}
       <Button
         size="lg"
         className="w-full"
         loading={loading}
+        disabled={settings.storeStatus !== "open"}
         onClick={handlePlaceOrder}
       >
-        Place Order — ₹{total}
+        {settings.storeStatus !== "open"
+          ? "Orders paused"
+          : `Place Order — ₹${total}`}
       </Button>
     </div>
   );

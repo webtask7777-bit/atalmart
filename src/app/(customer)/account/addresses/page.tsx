@@ -4,9 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Plus, MapPin, Home, Briefcase, Edit2, Trash2, Check } from "lucide-react";
 import { useAddressStore, type SavedAddress } from "@/lib/store/addresses";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { useUserPincodeStore } from "@/lib/store/user-pincode";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
+import { PinDropPicker } from "@/components/customer/pin-drop-picker";
 import { validatePhone10 } from "@/lib/validators";
 import { toast } from "sonner";
 
@@ -18,6 +21,8 @@ const LABEL_ICON: Record<SavedAddress["label"], React.ComponentType<{ size?: num
 
 export default function AddressesPage() {
   const { addresses, selectedId, add, update, remove, select } = useAddressStore();
+  const { profile } = useAuth();
+  const storedPincode = useUserPincodeStore((s) => s.pincode);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<SavedAddress, "id" | "createdAt">>({
@@ -31,7 +36,16 @@ export default function AddressesPage() {
 
   const openCreate = () => {
     setEditId(null);
-    setForm({ label: "Home", recipient: "", phone: "", line: "", landmark: "", pincode: "" });
+    // Prefill from the logged-in profile (name + phone from OTP login) and the
+    // already-selected delivery pincode, so the customer only types the street.
+    setForm({
+      label: "Home",
+      recipient: profile?.name ?? "",
+      phone: profile?.phone ? profile.phone.replace(/\D/g, "").slice(-10) : "",
+      line: "",
+      landmark: "",
+      pincode: storedPincode ?? "",
+    });
     setModalOpen(true);
   };
 
@@ -45,6 +59,8 @@ export default function AddressesPage() {
       line: a.line,
       landmark: a.landmark,
       pincode: a.pincode,
+      lat: a.lat,
+      lng: a.lng,
     });
     setModalOpen(true);
   };
@@ -252,6 +268,22 @@ export default function AddressesPage() {
               maxLength={6}
             />
           </div>
+
+          {/* Pin-drop on map — saves lat/lng + validates service area live */}
+          <div>
+            <label className="block text-sm font-medium text-brown-light mb-2">
+              Map pe pin drop karein <span className="text-gray-400 font-normal">(optional, but recommended)</span>
+            </label>
+            <PinDropPicker
+              value={
+                form.lat != null && form.lng != null
+                  ? { lat: form.lat, lng: form.lng }
+                  : null
+              }
+              onChange={({ lat, lng }) => setForm((f) => ({ ...f, lat, lng }))}
+            />
+          </div>
+
           <Button className="w-full" onClick={save}>
             {editId ? "Update Address" : "Save Address"}
           </Button>
