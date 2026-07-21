@@ -124,7 +124,8 @@ export async function POST(req: NextRequest) {
     appName: storeSettings?.appName || "Atalmart",
     tagline: storeSettings?.tagline || "Atal Nagar ki Atal Delivery",
     storeAddress:
-      storeSettings?.storeAddress || "Sector 21, Atal Nagar, Naya Raipur",
+      storeSettings?.storeAddress ||
+      "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
     contactEmail: storeSettings?.contactEmail || "support@atalmart.in",
     contactPhone: storeSettings?.contactPhone || "+91 9876543210",
   };

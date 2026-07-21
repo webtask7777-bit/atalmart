@@ -23,19 +23,23 @@ interface ChatRequestBody {
   storeContext?: string; // optional dynamic context (current cart, address)
 }
 
-const DEMO_REPLIES = [
-  "Namaste! 🙏 Main demo mode mein hoon — abhi tak API key set nahi hai. Admin Settings me jaakar Anthropic API key add karein, phir main aapki har query handle kar sakta hoon.",
-  "AI support feature ke liye admin ko Anthropic API key configure karni hogi. Tab tak — delivery 10 minute, free above ₹299, COD + UPI accepted. Aur kuch?",
+// Customer-facing fallback when the AI assistant isn't live yet. NEVER mention
+// API keys / admin setup here — that's internal config the customer shouldn't
+// see. Warm "coming soon" tone + a few genuinely useful facts + contact.
+const COMING_SOON_REPLIES = [
+  "Namaste! 🙏 Main Atalmart Assistant — abhi thodi setup mein hoon, live chat bahut jald aa rahi hai! ✨ Tab tak: Naya Raipur mein quick delivery, ₹299+ pe free delivery, COD + UPI dono chalte hain. Kuch aur? support@atalmart.in pe likhein. 🛒",
+  "Hello ji! 🙏 Hamari live chat support bahut jald aa rahi hai — hum coming soon hain! ⚡ Filhaal itna: quick grocery delivery, free delivery ₹299+ pe, COD bhi available. Zyada madad ke liye support@atalmart.in ya +91 9876543210. 🛵",
+  "Hi! 🙏 AI chat thodi der mein live ho rahi hai — bahut jald! 🎉 Tab tak agar order, delivery ya payment ke baare mein kuch poochna ho to support@atalmart.in pe email kar dein, hum turant reply karenge. 🛒",
 ];
 
 function buildSystemPrompt(): string {
   // KEEP THIS FROZEN — any per-request variation invalidates the prompt cache.
   // For dynamic info (current cart, address), pass via a user message instead.
-  return `You are "Atalmart Assistant" — the friendly customer support bot for Atalmart, a 10-minute grocery delivery app serving Atal Nagar, Naya Raipur (Chhattisgarh, India).
+  return `You are "Atalmart Assistant" — the friendly customer support bot for Atalmart, a quick grocery delivery app serving Atal Nagar, Naya Raipur (Chhattisgarh, India).
 
 # Your personality
 - Warm, helpful, conversational — like a polite neighbourhood shopkeeper
-- Reply in **Hinglish** (Hindi-English code-switching) by default — the way an urban Indian millennial would type. Example: "Bilkul! Aapka order 10 minute mein pohanch jaayega."
+- Reply in **Hinglish** (Hindi-English code-switching) by default — the way an urban Indian millennial would type. Example: "Bilkul! Aapka order jaldi pohanch jaayega."
 - If the customer writes in pure English or pure Hindi, match their language
 - Keep replies **short and direct** (1-3 sentences). This is a chat bubble, not an essay
 - Use emojis sparingly but warmly — 🙏 🛒 ⚡ 🛵 when appropriate
@@ -43,8 +47,8 @@ function buildSystemPrompt(): string {
 
 # Store information
 - **Name**: Atalmart — "Atal Nagar ki Atal Delivery"
-- **Location**: Sector 21, Atal Nagar, Naya Raipur, Chhattisgarh (492101)
-- **Delivery time**: 10 minutes (genuine quick-commerce)
+- **Location**: Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018
+- **Delivery time**: quick delivery — as fast as possible (do NOT promise a specific number of minutes)
 - **Delivery fee**: ₹25, FREE above ₹299
 - **Minimum order**: ₹49
 - **Delivery fleet**: 100% electric scooters 🛵⚡ (eco-friendly)
@@ -77,7 +81,7 @@ NEVER promise delivery to areas outside this list, even if the customer insists.
 - **GROCERY100**: ₹100 off on orders above ₹699
 
 # Categories we carry (20 total)
-Paan Corner, Dairy/Bread/Eggs, Fruits & Vegetables, Cold Drinks, Snacks, Breakfast/Instant Food, Sweet Tooth, Bakery, Tea/Coffee, Atta/Rice/Dal, Masala/Oil, Sauces, Chicken/Meat/Fish, Organic, Baby Care, Pharma & Wellness, Cleaning, Home & Office, Personal Care, Pet Care.
+Paan Corner, Dairy, Fruits & Vegetables, Cold Drinks, Snacks, Breakfast/Instant Food, Chocolates & Sweets, Bakery (breads/buns/biscuits), Tea/Coffee, Atta/Rice/Dal, Masala/Oil, Sauces, Chicken/Meat/Fish (incl. eggs), Baby Care, Pharma & Wellness, Cleaning (incl. pooja items/disposables), Stationery/Office & School, Personal Care, Pet Care.
 
 # Common policies
 - **Returns**: Damaged/wrong items — full refund within 24 hours, no questions asked
@@ -158,7 +162,10 @@ export async function POST(req: NextRequest) {
   // through to demo mode automatically.
   const resolved = resolveAnthropicKey(apiKey);
   if (!resolved.value || !resolved.value.startsWith("sk-ant-")) {
-    const reply = DEMO_REPLIES[Math.floor(Math.random() * DEMO_REPLIES.length)];
+    const reply =
+      COMING_SOON_REPLIES[
+        Math.floor(Math.random() * COMING_SOON_REPLIES.length)
+      ];
     return streamTextResponse(reply, { demo: true });
   }
 

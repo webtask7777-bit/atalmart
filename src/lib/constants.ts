@@ -1,13 +1,22 @@
 export const APP_NAME = "Atalmart";
 export const APP_TAGLINE = "Atal Nagar ki Atal Delivery";
 
+/** Company incorporation date (owner-confirmed). Shown in footer / legal copy. */
+export const INCORPORATION_DATE = "01 July 2026";
+
 export const DELIVERY_FEE = 25;
 export const FREE_DELIVERY_ABOVE = 299;
 
+/**
+ * Atalmart dark store (10-min delivery hub). All rider routing, ETA, and
+ * service-area distance calculations originate here. Plot currently empty —
+ * warehouse construction scheduled at this exact lat/lng. Update only if the
+ * warehouse moves.
+ */
 export const STORE_LOCATION = {
-  lat: 21.1610,
-  lng: 81.7869,
-  address: "Sector 21, Atal Nagar, Naya Raipur",
+  lat: 21.141127812971583,
+  lng: 81.78011102244383,
+  address: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
 };
 
 /** Friendly area label for each serviceable pincode (used in confirmation UI). */
@@ -204,23 +213,22 @@ export const ORDER_STATUS_LABELS_HI: Record<string, string> = {
 
 export const CATEGORIES_SEED = [
   { name: "Paan Corner", name_hi: "पान कॉर्नर", icon: "🥥" },
-  { name: "Dairy, Bread & Eggs", name_hi: "डेयरी, ब्रेड और अंडा", icon: "🥛" },
+  { name: "Dairy", name_hi: "डेयरी", icon: "🥛" },
   { name: "Fruits & Vegetables", name_hi: "फल और सब्जी", icon: "🥬" },
   { name: "Cold Drinks & Juices", name_hi: "कोल्ड ड्रिंक्स और जूस", icon: "🥤" },
   { name: "Snacks & Munchies", name_hi: "स्नैक्स", icon: "🍿" },
   { name: "Breakfast & Instant Food", name_hi: "ब्रेकफास्ट और इंस्टेंट फूड", icon: "🍜" },
-  { name: "Sweet Tooth", name_hi: "मीठा", icon: "🍫" },
+  { name: "Chocolates & Sweets", name_hi: "मीठा", icon: "🍫" },
   { name: "Bakery & Biscuits", name_hi: "बेकरी और बिस्किट", icon: "🍪" },
   { name: "Tea, Coffee & Health Drink", name_hi: "चाय, कॉफी और हेल्थ ड्रिंक", icon: "☕" },
   { name: "Atta, Rice & Dal", name_hi: "आटा, चावल और दाल", icon: "🌾" },
   { name: "Masala, Oil & More", name_hi: "मसाले, तेल और बहुत कुछ", icon: "🌶️" },
   { name: "Sauces & Spreads", name_hi: "सॉस और स्प्रेड", icon: "🍯" },
   { name: "Chicken, Meat & Fish", name_hi: "चिकन, मांस और मछली", icon: "🍗" },
-  { name: "Organic & Healthy Living", name_hi: "ऑर्गेनिक", icon: "🥗" },
   { name: "Baby Care", name_hi: "बेबी केयर", icon: "🍼" },
   { name: "Pharma & Wellness", name_hi: "दवाई और स्वास्थ्य", icon: "💊" },
   { name: "Cleaning Essentials", name_hi: "सफाई", icon: "🧹" },
-  { name: "Home & Office", name_hi: "घर और ऑफिस", icon: "🪔" },
+  { name: "Stationery, Office & School", name_hi: "स्टेशनरी, ऑफिस और स्कूल", icon: "✏️" },
   { name: "Personal Care", name_hi: "पर्सनल केयर", icon: "🧴" },
   { name: "Pet Care", name_hi: "पेट केयर", icon: "🐶" },
 ];
