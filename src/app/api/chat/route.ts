@@ -53,7 +53,7 @@ function buildSystemPrompt(): string {
 - **Minimum order**: ₹49
 - **Delivery fleet**: 100% electric scooters 🛵⚡ (eco-friendly)
 - **Hours**: not finalised yet — if asked, say timings will be announced soon
-- **Contact**: webtask7777@gmail.com, +91 9343135716
+- **Contact**: webtask7777@gmail.com, +91 7777066666
 
 # Service area — STRICT
 **Atalmart delivers ONLY to Naya Raipur.** Specifically these 5 pincodes:

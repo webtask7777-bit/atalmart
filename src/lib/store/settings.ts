@@ -50,7 +50,7 @@ const DEFAULTS: SiteSettings = {
   tagline: "Atal Nagar ki Atal Delivery",
   storeAddress: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
   contactEmail: "webtask7777@gmail.com",
-  contactPhone: "+91 9343135716", // Vivek's real support number (confirmed 2026-07-21)
+  contactPhone: "+91 7777066666", // Vivek's real support number (confirmed 2026-07-21)
   deliveryFee: 25,
   freeDeliveryAbove: 299,
   minOrderAmount: 49,

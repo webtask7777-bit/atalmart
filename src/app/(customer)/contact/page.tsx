@@ -18,8 +18,8 @@ const CARDS = [
   {
     icon: Phone,
     label: "Phone",
-    value: "+91 9343135716",
-    href: "tel:+919343135716",
+    value: "+91 7777066666",
+    href: "tel:+917777066666",
   },
   {
     icon: MapPin,
