@@ -12,8 +12,15 @@ import { useEffect, useState } from "react";
  */
 interface UserPincodeStore {
   pincode: string | null;
+  /**
+   * Precise area label when known (e.g. from a location lookup that resolved
+   * the exact sector — "Sector 24, Atal Nagar"). All of sectors 21–29 share
+   * pincode 492101, so without this the header can only show the generic
+   * "Sector 21–29" range. Null when the user typed a pincode by hand.
+   */
+  area: string | null;
   promptDismissed: boolean;
-  setPincode: (pincode: string) => void;
+  setPincode: (pincode: string, area?: string | null) => void;
   clearPincode: () => void;
   dismissPrompt: () => void;
 }
@@ -22,15 +29,18 @@ export const useUserPincodeStore = create<UserPincodeStore>()(
   persist(
     (set) => ({
       pincode: null,
+      area: null,
       promptDismissed: false,
-      setPincode: (pincode) =>
-        set({ pincode: pincode.trim(), promptDismissed: true }),
-      clearPincode: () => set({ pincode: null }),
+      setPincode: (pincode, area = null) =>
+        set({ pincode: pincode.trim(), area: area || null, promptDismissed: true }),
+      // clearPincode also un-dismisses so the picker modal opens again.
+      // Without this reset, tapping "Tap to set" on a header that had a
+      // previously-dismissed pincode prompt was a silent no-op.
+      clearPincode: () => set({ pincode: null, area: null, promptDismissed: false }),
       dismissPrompt: () => set({ promptDismissed: true }),
     }),
     {
       name: "atalmart-user-pincode",
-      skipHydration: true,
     },
   ),
 );
@@ -42,15 +52,10 @@ export const useUserPincodeStore = create<UserPincodeStore>()(
 export function useUserPincodeHydrated(): boolean {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => {
-    if (useUserPincodeStore.persist.hasHydrated()) {
-      setHydrated(true);
-      useUserPincodeStore.persist.rehydrate();
-      return;
-    }
+    setHydrated(useUserPincodeStore.persist.hasHydrated());
     const unsub = useUserPincodeStore.persist.onFinishHydration(() =>
       setHydrated(true),
     );
-    useUserPincodeStore.persist.rehydrate();
     return unsub;
   }, []);
   return hydrated;
