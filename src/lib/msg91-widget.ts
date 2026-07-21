@@ -63,6 +63,30 @@ function initWidget(w: Msg91Window) {
   });
 }
 
+/**
+ * initSendOTP exposes sendOtp/verifyOtp/retryOtp asynchronously (after the
+ * widget finishes its own setup), so we must wait for them rather than call
+ * immediately after init. Polls up to ~8s.
+ */
+function waitForMethods(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      const w = window as Msg91Window;
+      if (typeof w.sendOtp === "function" && typeof w.verifyOtp === "function") {
+        resolve();
+        return;
+      }
+      if (Date.now() - start > 8000) {
+        reject(new Error("SMS service ready hone me time lag gaya — dobara try karein"));
+        return;
+      }
+      setTimeout(tick, 120);
+    };
+    tick();
+  });
+}
+
 /** Load the MSG91 provider script (with a fallback host) and init the widget. */
 export function loadMsg91(): Promise<void> {
   if (loadPromise) return loadPromise;
@@ -70,7 +94,7 @@ export function loadMsg91(): Promise<void> {
     const w = window as Msg91Window;
     if (typeof w.initSendOTP === "function") {
       initWidget(w);
-      resolve();
+      waitForMethods().then(resolve).catch(reject);
       return;
     }
     const urls = [
@@ -84,7 +108,7 @@ export function loadMsg91(): Promise<void> {
       s.async = true;
       s.onload = () => {
         initWidget(window as Msg91Window);
-        resolve();
+        waitForMethods().then(resolve).catch(reject);
       };
       s.onerror = () => {
         i += 1;
