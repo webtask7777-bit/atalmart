@@ -10,6 +10,7 @@ export type Banner = {
   ctaHref: string;
   gradient: string; // e.g. "from-saffron via-orange-500 to-red-500"
   illo: string; // emoji
+  imgSrc?: string; // optional real image, takes priority over illo
   enabled: boolean;
   sortOrder: number;
 };
@@ -18,12 +19,13 @@ const SEED: Banner[] = [
   {
     id: "b1",
     badge: "FLASH DEAL",
-    title: "10-minute delivery",
+    title: "Quick delivery",
     subtitle: "Atal Nagar mein groceries, dairy, snacks — abhi order karo, abhi pao",
     ctaLabel: "Shop now",
     ctaHref: "/",
     gradient: "from-saffron via-orange-500 to-red-500",
     illo: "🛒",
+    imgSrc: "/banners/delivery-rider-2.png",
     enabled: true,
     sortOrder: 1,
   },
@@ -43,11 +45,12 @@ const SEED: Banner[] = [
     id: "b3",
     badge: "FREE DELIVERY",
     title: "Order above ₹299, save ₹25",
-    subtitle: "No delivery charges on orders over ₹299 — sirf aaj!",
+    subtitle: "No delivery charges on orders over ₹299.",
     ctaLabel: "Browse essentials",
     ctaHref: "/",
     gradient: "from-purple-600 via-fuchsia-500 to-pink-500",
     illo: "🚚",
+    imgSrc: "/banners/delivery-rider.png",
     enabled: true,
     sortOrder: 3,
   },
@@ -55,11 +58,14 @@ const SEED: Banner[] = [
     id: "b4",
     badge: "TRENDING",
     title: "Aashirvaad Atta sale",
-    subtitle: "5 kg pack at ₹265 — 15% off MRP. Made from 100% whole wheat.",
+    // Real live product + real prices (10 kg @ ₹510, MRP ₹580) — never
+    // advertise a pack/price that doesn't exist in the catalog.
+    subtitle: "10 kg pack at ₹510 — ₹70 off MRP. 100% whole wheat.",
     ctaLabel: "Shop now",
-    ctaHref: "/product/p31",
+    ctaHref: "/product/9258f450-1fde-43e2-acca-77c0874a354a",
     gradient: "from-amber-600 via-orange-600 to-red-700",
     illo: "🌾",
+    imgSrc: "/banners/aashirvaad-atta.png",
     enabled: true,
     sortOrder: 4,
   },
@@ -108,7 +114,14 @@ export const useBannerStore = create<BannerStore>()(
       },
       reset: () => set({ banners: SEED }),
     }),
-    { name: "atalmart-banners" },
+    {
+      name: "atalmart-banners",
+      // v1: b4 pointed at demo id /product/p31 with a made-up ₹265 price.
+      // Bumping the version discards that stale persisted copy for existing
+      // visitors so everyone gets the corrected seed.
+      version: 1,
+      migrate: () => ({ banners: SEED }),
+    },
   ),
 );
 

@@ -28,7 +28,7 @@ interface ChatRequestBody {
 // see. Warm "coming soon" tone + a few genuinely useful facts + contact.
 const COMING_SOON_REPLIES = [
   "Namaste! 🙏 Main Atalmart Assistant — abhi thodi setup mein hoon, live chat bahut jald aa rahi hai! ✨ Tab tak: Naya Raipur mein quick delivery, ₹299+ pe free delivery, COD + UPI dono chalte hain. Kuch aur? support@atalmart.in pe likhein. 🛒",
-  "Hello ji! 🙏 Hamari live chat support bahut jald aa rahi hai — hum coming soon hain! ⚡ Filhaal itna: quick grocery delivery, free delivery ₹299+ pe, COD bhi available. Zyada madad ke liye support@atalmart.in ya +91 9876543210. 🛵",
+  "Hello ji! 🙏 Hamari live chat support bahut jald aa rahi hai — hum coming soon hain! ⚡ Filhaal itna: quick grocery delivery, free delivery ₹299+ pe, COD bhi available. Zyada madad ke liye support@atalmart.in pe likhein. 🛵",
   "Hi! 🙏 AI chat thodi der mein live ho rahi hai — bahut jald! 🎉 Tab tak agar order, delivery ya payment ke baare mein kuch poochna ho to support@atalmart.in pe email kar dein, hum turant reply karenge. 🛒",
 ];
 
@@ -52,8 +52,8 @@ function buildSystemPrompt(): string {
 - **Delivery fee**: ₹25, FREE above ₹299
 - **Minimum order**: ₹49
 - **Delivery fleet**: 100% electric scooters 🛵⚡ (eco-friendly)
-- **Hours**: 7 AM to 11 PM, 7 days a week
-- **Contact**: support@atalmart.in, +91 9876543210
+- **Hours**: not finalised yet — if asked, say timings will be announced soon
+- **Contact**: support@atalmart.in
 
 # Service area — STRICT
 **Atalmart delivers ONLY to Naya Raipur.** Specifically these 5 pincodes:

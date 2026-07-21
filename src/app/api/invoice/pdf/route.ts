@@ -127,7 +127,8 @@ export async function POST(req: NextRequest) {
       storeSettings?.storeAddress ||
       "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
     contactEmail: storeSettings?.contactEmail || "support@atalmart.in",
-    contactPhone: storeSettings?.contactPhone || "+91 9876543210",
+    // No placeholder fallback — print phone only if the admin has set a real one.
+    contactPhone: storeSettings?.contactPhone || "",
   };
 
   const pdf = await PDFDocument.create();
@@ -189,16 +190,11 @@ export async function POST(req: NextRequest) {
     color: TEXT_GRAY,
   });
   page.drawText(
-    `${store.contactPhone}  ·  ${store.contactEmail}`,
+    [store.contactPhone, store.contactEmail].filter(Boolean).join("  ·  "),
     { x: margin + 50, y: y - 50, size: 8, font: helv, color: TEXT_GRAY },
   );
-  page.drawText("GSTIN: 22ABCDE1234F1Z5  ·  FSSAI: 12345678901234", {
-    x: margin + 50,
-    y: y - 62,
-    size: 8,
-    font: helv,
-    color: TEXT_GRAY,
-  });
+  // GSTIN/FSSAI intentionally omitted — never print fabricated registration
+  // numbers on an invoice. Add the real ones here once Vivek registers.
 
   // Invoice number block (right)
   const invoiceNo = `ATM/${new Date(order.placed_at).getFullYear()}/${order.id

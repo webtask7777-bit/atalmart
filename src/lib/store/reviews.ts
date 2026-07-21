@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { Review } from "@/types";
+import { isDemoMode } from "@/lib/supabase/helpers";
 
 interface ReviewsStore {
   reviews: Review[];
@@ -17,7 +18,7 @@ const SEED: Review[] = [
     user_id: "u1",
     user_name: "Ravi S.",
     rating: 5,
-    comment: "Fresh milk, always on time! 10 minute me hi pohanch jaata hai.",
+    comment: "Fresh milk, always on time! Bahut jaldi pohanch jaata hai.",
     created_at: "2026-05-10T08:30:00Z",
     order_id: "demo-1",
   },
@@ -52,10 +53,15 @@ const SEED: Review[] = [
   },
 ];
 
+// Fabricated sample reviews belong to demo mode ONLY — a live store must
+// never ship with fake customer reviews. (Their demo product_ids don't match
+// live UUIDs anyway, but keep the data out of live localStorage entirely.)
+const INITIAL: Review[] = isDemoMode() ? SEED : [];
+
 export const useReviewsStore = create<ReviewsStore>()(
   persist(
     (set) => ({
-      reviews: SEED,
+      reviews: INITIAL,
       add: (review) => {
         const newReview: Review = {
           ...review,
@@ -73,7 +79,7 @@ export const useReviewsStore = create<ReviewsStore>()(
             r.id === id ? { ...r, hidden: !r.hidden } : r,
           ),
         })),
-      reset: () => set({ reviews: SEED }),
+      reset: () => set({ reviews: INITIAL }),
     }),
     { name: "atalmart-reviews" },
   ),

@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Mail, MapPin } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata = {
@@ -7,6 +7,8 @@ export const metadata = {
   alternates: { canonical: "/contact" },
 };
 
+// Owner-confirmed facts only — no placeholder phone/hours until Vivek
+// provides the real support number and store timings.
 const CARDS = [
   {
     icon: Mail,
@@ -15,20 +17,9 @@ const CARDS = [
     href: "mailto:support@atalmart.in",
   },
   {
-    icon: Phone,
-    label: "Phone",
-    value: "+91 9876543210",
-    href: "tel:+919876543210",
-  },
-  {
     icon: MapPin,
     label: "Address",
     value: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
-  },
-  {
-    icon: Clock,
-    label: "Hours",
-    value: "7 AM – 11 PM, 7 days a week",
   },
 ];
 

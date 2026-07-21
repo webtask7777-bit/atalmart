@@ -50,7 +50,7 @@ const DEFAULTS: SiteSettings = {
   tagline: "Atal Nagar ki Atal Delivery",
   storeAddress: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
   contactEmail: "support@atalmart.in",
-  contactPhone: "+91 9876543210",
+  contactPhone: "", // no placeholder — set the real support number in admin settings
   deliveryFee: 25,
   freeDeliveryAbove: 299,
   minOrderAmount: 49,
