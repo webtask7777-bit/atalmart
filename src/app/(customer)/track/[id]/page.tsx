@@ -648,7 +648,7 @@ export default function TrackOrderPage({
             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">
               Reason
             </p>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
               {RETURN_REASONS.map((r) => (
                 <label
                   key={r}

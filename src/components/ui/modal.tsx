@@ -36,7 +36,7 @@ export function Modal({ open, onClose, title, children, className = "" }: ModalP
       className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className={`bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-xl ${className}`}>
+      <div className={`bg-white rounded-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto scrollbar-hide shadow-xl ${className}`}>
         <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
           <h2 className="text-lg font-bold text-brown">{title}</h2>
           <button

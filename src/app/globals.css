@@ -37,9 +37,12 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar — height keeps horizontal bars slim too (defining any
+   ::-webkit-scrollbar disables macOS auto-hide overlay, so every bar left
+   visible must at least be thin). Card rails/modals use .scrollbar-hide. */
 ::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: var(--saffron-light);

@@ -22,6 +22,7 @@ const GREETING: ChatMessage = {
 
 export function ChatBubble() {
   const [open, setOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -29,6 +30,28 @@ export function ChatBubble() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const settings = useSettings();
   const cartItems = useCartStore((s) => s.items);
+
+  // Auto-hide on scroll-down, reveal on scroll-up or rest.
+  useEffect(() => {
+    if (open) return;
+    let last = window.scrollY;
+    let restTimer: ReturnType<typeof setTimeout> | undefined;
+    const onScroll = () => {
+      const now = window.scrollY;
+      const dy = now - last;
+      if (Math.abs(dy) > 6) {
+        setHidden(dy > 0 && now > 120);
+        last = now;
+      }
+      if (restTimer) clearTimeout(restTimer);
+      restTimer = setTimeout(() => setHidden(false), 700);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (restTimer) clearTimeout(restTimer);
+    };
+  }, [open]);
 
   // Restore history from localStorage
   useEffect(() => {
@@ -192,12 +215,13 @@ export function ChatBubble() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open chat support"
-          className="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-saffron to-orange-600 text-white shadow-lg shadow-orange-300/50 hover:shadow-xl hover:scale-110 transition-all flex items-center justify-center group"
+          className={`fixed bottom-16 right-3 md:bottom-6 md:right-6 z-40 w-11 h-11 md:w-12 md:h-12 rounded-full bg-saffron text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center group ${
+            hidden ? "translate-y-24 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
+          }`}
         >
-          <MessageCircle size={24} />
-          <span className="absolute top-0 right-0 w-3 h-3 bg-indian-green rounded-full ring-2 ring-white" />
-          <span className="absolute -top-10 right-0 bg-brown text-white text-[11px] font-medium px-2.5 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Need help? Chat with us
+          <MessageCircle size={18} />
+          <span className="absolute -top-9 right-0 bg-brown text-white text-[11px] font-medium px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            Help
           </span>
         </button>
       )}
@@ -219,7 +243,7 @@ export function ChatBubble() {
                 <p className="text-[10px] opacity-90 truncate">
                   {settings.anthropicEnabled && settings.anthropicApiKey
                     ? "AI-powered · Online"
-                    : "Demo mode · Setup in admin"}
+                    : "Live chat coming soon ✨"}
                 </p>
               </div>
             </div>
@@ -244,7 +268,7 @@ export function ChatBubble() {
           {/* Messages */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50"
+            className="flex-1 overflow-y-auto scrollbar-hide p-3 space-y-2 bg-gray-50"
           >
             {messages.map((m) => (
               <ChatBubbleRow key={m.id} message={m} />

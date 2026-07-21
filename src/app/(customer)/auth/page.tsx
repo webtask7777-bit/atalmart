@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Phone, ArrowRight, AlertCircle, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -21,6 +21,21 @@ export default function AuthPage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  // Where to send the customer after login (e.g. /auth?next=/checkout).
+  // Read from window (not useSearchParams) so the static page needs no
+  // Suspense boundary. Only same-origin paths are honoured.
+  const [next, setNext] = useState<string | null>(null);
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("next");
+    if (raw && raw.startsWith("/") && !raw.startsWith("//")) setNext(raw);
+  }, []);
+
+  // Returning user who logged in mid-flow (e.g. from checkout): as soon as
+  // the profile lands with a name, send them back where they came from
+  // instead of stranding them on the account card.
+  useEffect(() => {
+    if (next && user && profile?.name) router.replace(next);
+  }, [next, user, profile?.name, router]);
 
   if (user && profile?.name) {
     return (
@@ -93,7 +108,7 @@ export default function AuthPage() {
     await updateProfile({ name: name.trim() });
     setLoading(false);
     toast.success("Welcome to Atalmart!");
-    router.push("/");
+    router.push(next || "/");
   };
 
   const handleAdminLogin = async () => {
@@ -115,11 +130,11 @@ export default function AuthPage() {
   return (
     <div className="max-w-sm mx-auto px-4 py-16">
       <div className="text-center mb-8">
-        <div className="w-16 h-16 bg-saffron rounded-2xl flex items-center justify-center mx-auto mb-4">
-          <span className="text-white font-bold text-3xl">A</span>
-        </div>
-        <h1 className="text-2xl font-bold text-brown">{APP_NAME}</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        {/* Page h1 for SEO/accessibility — the visible headline is the logo,
+            so this stays screen-reader-only. */}
+        <h1 className="sr-only">Login or Sign Up — Atalmart</h1>
+        <Logo className="text-4xl" />
+        <p className="text-sm text-gray-500 -mt-1">
           Atal Nagar ki Atal Delivery
         </p>
       </div>
@@ -151,6 +166,7 @@ export default function AuthPage() {
                 maxLength={10}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                onKeyDown={(e) => { if (e.key === "Enter") handleSendOTP(); }}
               />
             </div>
           </div>
@@ -211,22 +227,35 @@ export default function AuthPage() {
           </p>
           <Input
             type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
             placeholder="Enter 6-digit OTP"
             maxLength={6}
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={(e) => { if (e.key === "Enter") handleVerifyOTP(); }}
             className="text-center text-lg tracking-widest"
           />
           <Button size="lg" className="w-full" loading={loading} onClick={handleVerifyOTP}>
             Verify & Login
             <ArrowRight size={18} />
           </Button>
-          <button
-            onClick={() => { setStep("phone"); setOtp(""); }}
-            className="w-full text-sm text-saffron hover:underline"
-          >
-            Change phone number
-          </button>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => { setStep("phone"); setOtp(""); }}
+              className="text-sm text-saffron hover:underline"
+            >
+              Change phone number
+            </button>
+            <button
+              onClick={handleSendOTP}
+              disabled={loading}
+              className="text-sm text-saffron hover:underline disabled:opacity-50"
+            >
+              Resend OTP
+            </button>
+          </div>
         </div>
       )}
 
@@ -237,9 +266,11 @@ export default function AuthPage() {
           </p>
           <Input
             type="text"
+            autoFocus
             placeholder="Your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSaveName(); }}
           />
           <Button size="lg" className="w-full" loading={loading} onClick={handleSaveName}>
             Start Shopping

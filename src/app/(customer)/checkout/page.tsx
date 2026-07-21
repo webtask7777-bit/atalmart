@@ -156,7 +156,7 @@ export default function CheckoutPage() {
 
     if (!isDemo && !user) {
       toast.error("Please login to place order");
-      router.push("/auth");
+      router.push("/auth?next=/checkout");
       return;
     }
 
@@ -340,7 +340,7 @@ export default function CheckoutPage() {
       {!isDemo && !user && (
         <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-4">
           <p className="text-sm text-brown">
-            <Link href="/auth" className="text-saffron font-medium hover:underline">
+            <Link href="/auth?next=/checkout" className="text-saffron font-medium hover:underline">
               Login
             </Link>{" "}
             to place order and track delivery.
