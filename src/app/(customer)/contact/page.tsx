@@ -1,4 +1,4 @@
-import { Mail, MapPin } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 
 export const metadata = {
@@ -7,14 +7,19 @@ export const metadata = {
   alternates: { canonical: "/contact" },
 };
 
-// Owner-confirmed facts only — no placeholder phone/hours until Vivek
-// provides the real support number and store timings.
+// Owner-confirmed facts only (phone + email confirmed by Vivek 2026-07-21).
 const CARDS = [
   {
     icon: Mail,
     label: "Email",
-    value: "support@atalmart.in",
-    href: "mailto:support@atalmart.in",
+    value: "webtask7777@gmail.com",
+    href: "mailto:webtask7777@gmail.com",
+  },
+  {
+    icon: Phone,
+    label: "Phone",
+    value: "+91 9343135716",
+    href: "tel:+919343135716",
   },
   {
     icon: MapPin,

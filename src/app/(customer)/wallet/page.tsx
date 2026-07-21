@@ -195,7 +195,7 @@ export default function WalletPage() {
       {/* Footer note */}
       <p className="text-[11px] text-gray-400 mt-4 text-center leading-relaxed">
         Wallet credits never expire on refunds. Promo credits may have an
-        expiry. For questions, contact support@atalmart.in
+        expiry. For questions, contact webtask7777@gmail.com
       </p>
     </div>
   );

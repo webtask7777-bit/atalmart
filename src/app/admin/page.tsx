@@ -19,9 +19,10 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useAdminStats, useAdminOrders } from "@/lib/hooks/use-admin";
-import { useAllProducts } from "@/lib/hooks/use-products";
-import { ORDER_STATUS_LABELS, CATEGORIES_SEED } from "@/lib/constants";
+import { useAllProducts, useCategories } from "@/lib/hooks/use-products";
+import { ORDER_STATUS_LABELS } from "@/lib/constants";
 import { DashboardSkeleton } from "@/components/ui/skeleton";
+import { StoreStatusQuickToggle } from "@/components/admin/store-status-quick-toggle";
 
 const statusColors: Record<string, string> = {
   placed: "bg-gray-100 text-gray-600",
@@ -55,6 +56,7 @@ export default function AdminDashboard() {
   const { stats, loading: statsLoading } = useAdminStats();
   const { orders, loading: ordersLoading } = useAdminOrders();
   const { products } = useAllProducts();
+  const { categories } = useCategories();
 
   const recentOrders = orders.slice(0, 5);
 
@@ -146,6 +148,9 @@ export default function AdminDashboard() {
           <span className="w-2 h-2 bg-indian-green rounded-full animate-pulse" />
         </div>
       </div>
+
+      {/* Store availability quick control (rush handling) */}
+      <StoreStatusQuickToggle />
 
       {/* KPI tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
@@ -321,12 +326,14 @@ export default function AdminDashboard() {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-10 gap-2">
-          {CATEGORIES_SEED.map((cat, i) => {
-            const id = String(i + 1);
-            const count = products.filter((p) => p.category_id === id).length;
+          {categories.map((cat) => {
+            // Match against the real category id (UUID in live mode,
+            // sort_order string in demo). Counting against `String(i+1)`
+            // — the prior code — left every count at 0 in live mode.
+            const count = products.filter((p) => p.category_id === cat.id).length;
             return (
               <Link
-                key={cat.name}
+                key={cat.id}
                 href={`/admin/products`}
                 className="text-center p-2 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-100"
               >

@@ -6,12 +6,18 @@ import { useRouter } from "next/navigation";
 import { MapPin, ShoppingCart, User, Search, ChevronDown } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
 import { useAuth } from "@/lib/hooks/use-auth";
-import { APP_NAME, PINCODE_AREA_LABELS, isServiceablePincode } from "@/lib/constants";
+import { PINCODE_AREA_LABELS, isServiceablePincode } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 import {
   useUserPincodeStore,
   useUserPincodeHydrated,
 } from "@/lib/store/user-pincode";
 import { useSettings } from "@/lib/store/settings";
+import {
+  DELIVERY_ETA_ENABLED,
+  etaForArea,
+  formatEta,
+} from "@/lib/delivery-zones";
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -24,18 +30,27 @@ export function Header({ onSearch }: HeaderProps) {
   const [searchInput, setSearchInput] = useState("");
   const hydrated = useUserPincodeHydrated();
   const userPincode = useUserPincodeStore((s) => s.pincode);
+  const userArea = useUserPincodeStore((s) => s.area);
   const clearPincode = useUserPincodeStore((s) => s.clearPincode);
   const settings = useSettings();
 
   const pincodeLabel = (() => {
-    if (!hydrated) return "Sector 21, Atal Nagar";
+    if (!hydrated) return "Atal Nagar";
     if (!userPincode) return "Tap to set";
-    return PINCODE_AREA_LABELS[userPincode] || userPincode;
+    // Precise sector from a location lookup wins over the generic pincode
+    // label (all of 21–29 share 492101, so the generic label is a range).
+    // Show just the sector — drop the ", Atal Nagar" suffix (covers values
+    // already saved with it in localStorage).
+    const area = userArea?.replace(/,\s*Atal Nagar\s*$/i, "") || null;
+    return area || PINCODE_AREA_LABELS[userPincode] || userPincode;
   })();
   const pincodeOk =
     hydrated && userPincode
       ? isServiceablePincode(userPincode, settings.serviceablePincodes)
       : true;
+  // Zone delivery-time estimate — only once a precise serviceable sector is set.
+  const deliveryEta =
+    DELIVERY_ETA_ENABLED && hydrated && pincodeOk ? etaForArea(userArea) : null;
 
   const handleSearchChange = (val: string) => {
     setSearchInput(val);
@@ -51,19 +66,14 @@ export function Header({ onSearch }: HeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center gap-3 md:gap-6 h-16">
+      <div className="max-w-7xl mx-auto px-3 md:px-4">
+        <div className="flex items-center gap-2 md:gap-6 h-12 md:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-9 h-9 bg-saffron rounded-xl flex items-center justify-center">
-              <span className="text-white font-bold text-lg leading-none">A</span>
-            </div>
-            <div className="hidden sm:block leading-tight">
-              <h1 className="text-base font-bold text-brown">
-                {APP_NAME}
-              </h1>
-              <p className="text-[10px] text-gray-500">
-                10 min grocery delivery
+            <div className="leading-tight text-center">
+              <Logo className="text-xl md:text-2xl" />
+              <p className="block text-[9px] md:text-[10px] text-gray-500 -mt-0.5 md:-mt-1 leading-none">
+                Quick Delivery Services
               </p>
             </div>
           </Link>
@@ -82,12 +92,17 @@ export function Header({ onSearch }: HeaderProps) {
               <p className="text-[10px] text-gray-500 font-medium">DELIVER TO</p>
               <p className="text-[13px] font-semibold text-brown truncate max-w-[160px]">
                 {pincodeLabel}
-                {userPincode && (
+                {userPincode && !deliveryEta && (
                   <span className="ml-1 font-mono text-[10px] text-gray-400">
                     · {userPincode}
                   </span>
                 )}
               </p>
+              {deliveryEta && (
+                <p className="text-[11px] font-semibold text-indian-green leading-none -mt-0.5">
+                  {formatEta(deliveryEta)}
+                </p>
+              )}
             </div>
             <ChevronDown size={14} className="text-gray-400 group-hover:text-saffron transition-colors" />
           </button>
@@ -111,6 +126,28 @@ export function Header({ onSearch }: HeaderProps) {
 
           {/* Right actions */}
           <div className="flex items-center gap-1 ml-auto">
+            {/* Mobile: inline location chip */}
+            <button
+              onClick={() => clearPincode()}
+              className="md:hidden flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-50 text-left max-w-[140px]"
+              title="Change delivery pincode"
+            >
+              <MapPin
+                size={12}
+                className={`${pincodeOk ? "text-saffron" : "text-red-500"} shrink-0`}
+              />
+              <span className="min-w-0 leading-tight">
+                <span className="block text-[11px] font-semibold text-brown truncate">
+                  {pincodeLabel}
+                </span>
+                {deliveryEta && (
+                  <span className="block text-[10px] font-semibold text-indian-green leading-none">
+                    {formatEta(deliveryEta)}
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={10} className="text-gray-400 shrink-0" />
+            </button>
             <Link
               href="/auth"
               className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
@@ -130,14 +167,15 @@ export function Header({ onSearch }: HeaderProps) {
             </Link>
             <Link
               href="/cart"
-              className="relative flex items-center gap-2 px-3 py-2 rounded-lg bg-indian-green text-white hover:bg-green-700 transition-colors"
+              className="relative flex items-center gap-2 px-2.5 md:px-3 py-1.5 md:py-2 rounded-lg bg-indian-green text-white hover:bg-green-700 transition-colors"
+              aria-label="Cart"
             >
-              <ShoppingCart size={18} />
+              <ShoppingCart size={16} />
               <span className="text-[13px] font-semibold hidden sm:inline">
                 {itemCount > 0 ? `${itemCount} item${itemCount > 1 ? "s" : ""}` : "My Cart"}
               </span>
               {itemCount > 0 && (
-                <span className="sm:hidden absolute -top-1 -right-1 w-5 h-5 bg-white text-indian-green text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-indian-green">
+                <span className="sm:hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-white text-indian-green text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-indian-green">
                   {itemCount}
                 </span>
               )}
@@ -145,33 +183,12 @@ export function Header({ onSearch }: HeaderProps) {
           </div>
         </div>
 
-        {/* Mobile: location + search */}
-        <div className="md:hidden pb-3 space-y-2">
-          <button
-            onClick={() => clearPincode()}
-            className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <MapPin
-              size={14}
-              className={`${pincodeOk ? "text-saffron" : "text-red-500"} shrink-0`}
-            />
-            <div className="text-left leading-tight flex-1">
-              <p className="text-[9px] text-gray-500 font-medium">DELIVER TO</p>
-              <p className="text-[12px] font-semibold text-brown truncate">
-                {pincodeLabel}
-                {userPincode && (
-                  <span className="ml-1 font-mono text-[10px] text-gray-400">
-                    · {userPincode}
-                  </span>
-                )}
-              </p>
-            </div>
-            <ChevronDown size={12} className="text-gray-400" />
-          </button>
+        {/* Mobile: slim search row */}
+        <div className="md:hidden pb-2">
           <form onSubmit={handleSearchSubmit}>
             <div className="relative">
               <Search
-                size={16}
+                size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
               />
               <input
@@ -179,7 +196,7 @@ export function Header({ onSearch }: HeaderProps) {
                 placeholder='Search "milk", "atta", "Maggi"...'
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-[13px] placeholder:text-gray-400 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-400 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
               />
             </div>
           </form>

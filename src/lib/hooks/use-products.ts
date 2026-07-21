@@ -158,11 +158,25 @@ export function useAllProducts() {
       return;
     }
     const supabase = createClient();
-    const { data } = await supabase
-      .from("products")
-      .select("*, category:categories(*), variants:product_variants(*)")
-      .order("created_at", { ascending: false });
-    setProducts((data as Product[]) || []);
+    // Paginate explicitly — Supabase/PostgREST caps a single response at 1000
+    // rows. The admin catalogue exceeds that (1300+ SKUs), so without paging
+    // ~300 products were silently invisible in the admin (couldn't be edited
+    // or re-published). Fetch in 1000-row pages until a short page arrives.
+    const pageSize = 1000;
+    const all: Product[] = [];
+    let from = 0;
+    for (;;) {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*, category:categories(*), variants:product_variants(*)")
+        .order("created_at", { ascending: false })
+        .range(from, from + pageSize - 1);
+      if (error || !data || data.length === 0) break;
+      all.push(...(data as Product[]));
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    setProducts(all);
     setLoading(false);
   }, []);
 
@@ -218,6 +232,7 @@ export function useProduct(id: string | undefined) {
         .from("products")
         .select("*, category:categories(*), variants:product_variants(*)")
         .eq("id", id)
+        .eq("active", true)
         .maybeSingle();
       if (!cancelled) {
         setProduct((data as Product) || null);
@@ -251,6 +266,39 @@ export async function createProduct(
 export async function updateProduct(id: string, updates: Partial<Product>) {
   if (isDemoMode()) return { data: updates, error: null };
   const supabase = createClient();
+  // If stock is being changed, prefer the audited RPC (migration 006) so the
+  // stock-movement ledger row gets a real reason + actor instead of
+  // 'unspecified'. The non-stock fields still go through a plain UPDATE.
+  //
+  // The RPC may not be installed yet (e.g. migration 006 hasn't been applied
+  // to a particular environment). In that case PostgREST returns a "function
+  // does not exist" error (code PGRST202 / 42883) and we silently fall back
+  // to the plain UPDATE so admins aren't blocked — the trigger from 006
+  // (when it lands) will still capture the change, just labeled
+  // 'unspecified'.
+  if (typeof updates.stock === "number") {
+    const { stock, ...rest } = updates;
+    const adjustResult = await supabase.rpc("admin_adjust_stock", {
+      p_product_id: id,
+      p_new_stock: stock,
+      p_reason: "admin_edit",
+      p_notes: null,
+    });
+    const rpcMissing =
+      adjustResult.error &&
+      (adjustResult.error.code === "PGRST202" ||
+        adjustResult.error.code === "42883" ||
+        /admin_adjust_stock/i.test(adjustResult.error.message || ""));
+    if (adjustResult.error && !rpcMissing) return adjustResult;
+    if (rpcMissing) {
+      // Fall back to plain UPDATE with all fields including stock.
+      return supabase.from("products").update(updates).eq("id", id).select().single();
+    }
+    if (Object.keys(rest).length === 0) {
+      return supabase.from("products").select().eq("id", id).single();
+    }
+    return supabase.from("products").update(rest).eq("id", id).select().single();
+  }
   return supabase.from("products").update(updates).eq("id", id).select().single();
 }
 
@@ -258,6 +306,99 @@ export async function deleteProduct(id: string) {
   if (isDemoMode()) return { error: null };
   const supabase = createClient();
   return supabase.from("products").delete().eq("id", id);
+}
+
+/**
+ * useCategories — returns the canonical category list with **real** IDs.
+ * In demo mode this is the seeded `demoCategories` ("1".."20"). In live
+ * mode it fetches the Supabase `categories` table so consumers get true
+ * UUIDs that match `products.category_id`.
+ *
+ * Used by the admin products page (sidebar + per-row label) where matching
+ * against `String(i+1)` instead of the real UUID was silently producing
+ * 0-count badges and a blank Category column.
+ */
+export function useCategories() {
+  const [categories, setCategories] = useState<Category[]>(() =>
+    isDemoMode() ? demoCategories : [],
+  );
+  const [loading, setLoading] = useState<boolean>(!isDemoMode());
+
+  const fetchCategories = useCallback(async () => {
+    if (isDemoMode()) {
+      setCategories(demoCategories);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("active", true)
+      .order("sort_order");
+    setCategories((data as Category[]) || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  return { categories, loading, refetch: fetchCategories };
+}
+
+/**
+ * Stock-movement ledger row, mirrors `public.stock_movements` from
+ * migration 006_stock_movements.sql.
+ */
+export interface StockMovement {
+  id: number;
+  product_id: string;
+  delta: number;
+  before_stock: number;
+  after_stock: number;
+  reason: string;
+  source: string;
+  order_id: string | null;
+  batch_code: string | null;
+  expiry_date: string | null;
+  store_id: string | null;
+  notes: string | null;
+  actor_id: string | null;
+  created_at: string;
+}
+
+/**
+ * useStockMovements — most-recent audit-log entries for a single product.
+ * Returns [] in demo mode (the ledger lives in Supabase, not localStorage).
+ */
+export function useStockMovements(productId: string | undefined, limit = 25) {
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const fetchMovements = useCallback(async () => {
+    if (!productId || isDemoMode()) {
+      setMovements([]);
+      return;
+    }
+    setLoading(true);
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("stock_movements")
+      .select("*")
+      .eq("product_id", productId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    setMovements((data as StockMovement[]) || []);
+    setLoading(false);
+  }, [productId, limit]);
+
+  useEffect(() => {
+    fetchMovements();
+  }, [fetchMovements]);
+
+  return { movements, loading, refetch: fetchMovements };
 }
 
 // Re-exports for any caller that previously imported the flat seed.

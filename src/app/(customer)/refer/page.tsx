@@ -40,7 +40,7 @@ export default function ReferAndEarnPage() {
   const credited = events.filter((e) => e.status === "credited").length;
   const totalEarned = credited * REFERRAL_REWARD;
 
-  const shareMessage = `Hey! 👋 Try Atalmart — Naya Raipur ka 10-minute grocery delivery 🛵⚡\n\nUse my code *${code}* and get ₹${REFERRAL_REWARD} OFF on your first order (₹${REFERRAL_MIN_ORDER}+)\n\n${shareUrl}`;
+  const shareMessage = `Hey! 👋 Try Atalmart — Naya Raipur ka quick grocery delivery 🛵⚡\n\nUse my code *${code}* and get ₹${REFERRAL_REWARD} OFF on your first order (₹${REFERRAL_MIN_ORDER}+)\n\n${shareUrl}`;
 
   const copyCode = async () => {
     try {

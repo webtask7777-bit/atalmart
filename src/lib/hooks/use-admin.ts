@@ -535,10 +535,21 @@ export function useAdminRiders() {
   return { riders, loading, refetch: fetchRiders };
 }
 
+/** Random 6-digit rider login code. */
+function generateAccessCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
 export async function createRider(rider: Omit<Rider, "id">) {
-  if (isDemoMode()) return { data: { ...rider, id: `demo-${Date.now()}` }, error: null };
+  // Always give a new rider a login code so they can use the rider app.
+  const withCode = {
+    ...rider,
+    access_code: rider.access_code || generateAccessCode(),
+  };
+  if (isDemoMode())
+    return { data: { ...withCode, id: `demo-${Date.now()}` }, error: null };
   const supabase = createClient();
-  return supabase.from("riders").insert(rider).select().single();
+  return supabase.from("riders").insert(withCode).select().single();
 }
 
 export async function updateRider(id: string, updates: Partial<Rider>) {

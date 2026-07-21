@@ -64,6 +64,10 @@ export interface Product {
   name_hi: string;
   description: string | null;
   category_id: string;
+  /** Blinkit-style subcategory within the parent category (migration 012).
+   *  Null = unassigned; still shows under the category's "All" chip. Names live
+   *  in code config (src/lib/subcategories.ts). */
+  subcategory?: string | null;
   price: number;
   mrp: number;
   unit: string;
@@ -188,6 +192,8 @@ export interface Rider {
   lat: number | null;
   lng: number | null;
   active: boolean;
+  /** 6-digit login code for the rider app (phone + code auth). */
+  access_code?: string | null;
 }
 
 export interface Address {

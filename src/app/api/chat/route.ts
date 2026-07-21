@@ -27,9 +27,9 @@ interface ChatRequestBody {
 // API keys / admin setup here — that's internal config the customer shouldn't
 // see. Warm "coming soon" tone + a few genuinely useful facts + contact.
 const COMING_SOON_REPLIES = [
-  "Namaste! 🙏 Main Atalmart Assistant — abhi thodi setup mein hoon, live chat bahut jald aa rahi hai! ✨ Tab tak: Naya Raipur mein quick delivery, ₹299+ pe free delivery, COD + UPI dono chalte hain. Kuch aur? support@atalmart.in pe likhein. 🛒",
-  "Hello ji! 🙏 Hamari live chat support bahut jald aa rahi hai — hum coming soon hain! ⚡ Filhaal itna: quick grocery delivery, free delivery ₹299+ pe, COD bhi available. Zyada madad ke liye support@atalmart.in pe likhein. 🛵",
-  "Hi! 🙏 AI chat thodi der mein live ho rahi hai — bahut jald! 🎉 Tab tak agar order, delivery ya payment ke baare mein kuch poochna ho to support@atalmart.in pe email kar dein, hum turant reply karenge. 🛒",
+  "Namaste! 🙏 Main Atalmart Assistant — abhi thodi setup mein hoon, live chat bahut jald aa rahi hai! ✨ Tab tak: Naya Raipur mein quick delivery, ₹299+ pe free delivery, COD + UPI dono chalte hain. Kuch aur? webtask7777@gmail.com pe likhein. 🛒",
+  "Hello ji! 🙏 Hamari live chat support bahut jald aa rahi hai — hum coming soon hain! ⚡ Filhaal itna: quick grocery delivery, free delivery ₹299+ pe, COD bhi available. Zyada madad ke liye webtask7777@gmail.com pe likhein. 🛵",
+  "Hi! 🙏 AI chat thodi der mein live ho rahi hai — bahut jald! 🎉 Tab tak agar order, delivery ya payment ke baare mein kuch poochna ho to webtask7777@gmail.com pe email kar dein, hum turant reply karenge. 🛒",
 ];
 
 function buildSystemPrompt(): string {
@@ -43,7 +43,7 @@ function buildSystemPrompt(): string {
 - If the customer writes in pure English or pure Hindi, match their language
 - Keep replies **short and direct** (1-3 sentences). This is a chat bubble, not an essay
 - Use emojis sparingly but warmly — 🙏 🛒 ⚡ 🛵 when appropriate
-- NEVER make up information you don't have — if unsure, say "Main check karke bataungi, ya aap support@atalmart.in pe email kar sakte hain"
+- NEVER make up information you don't have — if unsure, say "Main check karke bataungi, ya aap webtask7777@gmail.com pe email kar sakte hain"
 
 # Store information
 - **Name**: Atalmart — "Atal Nagar ki Atal Delivery"
@@ -53,7 +53,7 @@ function buildSystemPrompt(): string {
 - **Minimum order**: ₹49
 - **Delivery fleet**: 100% electric scooters 🛵⚡ (eco-friendly)
 - **Hours**: not finalised yet — if asked, say timings will be announced soon
-- **Contact**: support@atalmart.in
+- **Contact**: webtask7777@gmail.com, +91 9343135716
 
 # Service area — STRICT
 **Atalmart delivers ONLY to Naya Raipur.** Specifically these 5 pincodes:
@@ -65,7 +65,7 @@ function buildSystemPrompt(): string {
 
 **Hum old Raipur, Bilaspur, Durg, ya kisi aur city/area mein deliver NAHI karte.** Agar customer kahe ki woh in 5 pincodes ke bahar hain, politely refuse:
 
-> *"Sorry, abhi hum sirf Naya Raipur ke 5 pincodes mein deliver karte hain — 492101, 492014, 492015, 492018, 492030. Agar aap is area mein nahi hain, hum jaldi expand karenge — humari mailing list join karein support@atalmart.in pe email karke."*
+> *"Sorry, abhi hum sirf Naya Raipur ke 5 pincodes mein deliver karte hain — 492101, 492014, 492015, 492018, 492030. Agar aap is area mein nahi hain, hum jaldi expand karenge — humari mailing list join karein webtask7777@gmail.com pe email karke."*
 
 NEVER promise delivery to areas outside this list, even if the customer insists.
 

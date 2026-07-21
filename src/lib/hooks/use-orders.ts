@@ -10,6 +10,7 @@ import {
   getAllDemoOrders,
 } from "@/lib/store/demo-orders";
 import { adjustStockBulk } from "@/lib/store/demo-products";
+import { getLiveStoreStatus, STORE_STATUS_COPY } from "@/lib/store/settings";
 import { sendWhatsApp } from "@/lib/whatsapp";
 import {
   useAcquisitionStore,
@@ -26,6 +27,18 @@ interface CreateOrderInput {
   delivery_fee: number;
   discount?: number;
   coupon_code?: string;
+  /** Wallet credit the customer chose to apply. The server re-caps this to the
+   *  real balance; passed through so the server total matches what was charged. */
+  walletApplied?: number;
+  /** Delivery pincode — feeds coupon pincode rules in server pricing. */
+  pincode?: string;
+  /** Razorpay proof for online orders. Required (server-side) when
+   *  payment_method === "online" and the amount owed is > 0. */
+  payment?: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  };
 }
 
 export function useOrders() {
@@ -142,6 +155,17 @@ export function useOrder(id: string) {
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<{ data: Order | null; error: string | null }> {
+  // Store-availability gate (rush handling / pre-launch). Authoritative DB
+  // read so a "pause orders" flip stops checkouts even on tabs opened before
+  // the toggle. See settings.storeStatus + StoreStatusBoard.
+  const store = await getLiveStoreStatus();
+  if (store.status !== "open") {
+    return {
+      data: null,
+      error: store.message.trim() || STORE_STATUS_COPY[store.status].body,
+    };
+  }
+
   if (isDemoMode()) {
     const ts = Date.now();
     const orderId = `demo-${ts}`;
@@ -271,68 +295,43 @@ export async function createOrder(input: CreateOrderInput): Promise<{ data: Orde
     return { data: demoOrder, error: null };
   }
 
-  const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { data: null, error: "Not logged in" };
-
-  // Atomic placement: place_order_atomic decrements stock + inserts orders +
-  // order_items inside a single transaction. If ANY product is short, the
-  // entire txn rolls back with INSUFFICIENT_STOCK:<product_id>. This is what
-  // prevents two simultaneous checkouts from overselling the same last item.
-  const { data: rpcRows, error: rpcErr } = await supabase.rpc(
-    "place_order_atomic",
-    {
-      p_user_id: user.id,
-      p_items: input.items.map((item) => ({
-        product_id: item.product.id,
-        product_name: item.product.name,
-        quantity: item.quantity,
-        // Variant overrides product price when set
-        price: item.variant?.price ?? item.product.price,
-        variant_id: item.variant?.id ?? null,
-        variant_unit: item.variant?.unit ?? null,
-      })),
-      p_total: input.total,
-      p_delivery_fee: input.delivery_fee,
-      p_discount: input.discount || 0,
-      p_address_line: input.address_line,
-      p_lat: 21.161,
-      p_lng: 81.787,
-      p_phone: input.phone,
-      p_payment_method: input.payment_method,
-      p_coupon_code: input.coupon_code || null,
-      p_notes: null,
-    },
-  );
-
-  if (rpcErr) {
-    // Surface a friendly oversell message; pass through other errors verbatim
-    const msg = rpcErr.message || "";
-    if (msg.includes("INSUFFICIENT_STOCK")) {
-      const productId = msg.split("INSUFFICIENT_STOCK:")[1]?.trim() || "an item";
-      return {
-        data: null,
-        error: `Sorry — ${productId} just sold out. Please refresh your cart.`,
-      };
-    }
-    return { data: null, error: msg || "Failed to place order" };
+  // Live placement goes through the server route /api/orders/place. The server
+  // RE-PRICES the cart from canonical data (ignoring client totals/prices),
+  // verifies the Razorpay payment, and writes via the service role. NEVER call
+  // place_order_atomic from the client — it would trust client-supplied
+  // user_id / total / prices (buy-for-₹1 / place-as-someone-else). The RPC is
+  // locked to service_role by migration 012.
+  let res: Response;
+  try {
+    res = await fetch("/api/orders/place", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        lines: input.items.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          variant_id: item.variant?.id ?? null,
+        })),
+        couponCode: input.coupon_code,
+        walletApplied: input.walletApplied,
+        pincode: input.pincode,
+        address_line: input.address_line,
+        phone: input.phone,
+        payment_method: input.payment_method,
+        payment: input.payment,
+      }),
+    });
+  } catch {
+    return { data: null, error: "Network error — please try again" };
   }
 
-  const orderId = (rpcRows as { order_id: string }[] | null)?.[0]?.order_id;
-  if (!orderId) {
-    return { data: null, error: "Order placement returned no ID" };
+  const payload = (await res.json().catch(() => ({}))) as {
+    order?: Order;
+    error?: string;
+  };
+  if (!res.ok || !payload.order) {
+    return { data: null, error: payload.error || "Failed to place order" };
   }
 
-  // Fetch the freshly-created order with items + profile for return value
-  const { data: order, error: fetchErr } = await supabase
-    .from("orders")
-    .select("*, items:order_items(*), profile:profiles(*)")
-    .eq("id", orderId)
-    .single();
-
-  if (fetchErr || !order) {
-    return { data: null, error: fetchErr?.message || "Order created but not retrievable" };
-  }
-
-  return { data: order as Order, error: null };
+  return { data: payload.order, error: null };
 }

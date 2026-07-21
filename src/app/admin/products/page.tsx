@@ -23,14 +23,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Modal } from "@/components/ui/modal";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { FindImagesPicker } from "@/components/admin/find-images-picker";
+import { subcatsFor } from "@/lib/subcategories";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import {
   useAllProducts,
+  useCategories,
+  useStockMovements,
   createProduct,
   updateProduct,
   deleteProduct,
 } from "@/lib/hooks/use-products";
-import { CATEGORIES_SEED } from "@/lib/constants";
 import { toast } from "sonner";
 import type { Product } from "@/types";
 
@@ -38,11 +41,20 @@ const emptyForm = {
   name: "",
   name_hi: "",
   description: "",
-  category_id: "1",
+  // Real category id is injected when the create modal opens (see openCreate).
+  // Empty string here means "needs a real id before submit"; the <select>
+  // below picks the first available category as its initial value.
+  category_id: "",
+  // Blinkit-style subcategory within the category (migration 012). "" = none.
+  subcategory: "" as string,
   price: 0,
   mrp: 0,
   unit: "1 pc",
   image_url: null as string | null,
+  // Additional gallery angles (BoP, side, ingredients). The picker writes
+  // both image_url (FoP) and image_urls[] (the rest); this lets the edit
+  // form display, reorder, and delete them.
+  image_urls: [] as string[],
   stock: 0,
   active: true,
   // ─── Blinkit-style detail fields (optional) ───
@@ -75,10 +87,81 @@ const emptyForm = {
 
 const LOW_STOCK_THRESHOLD = 10;
 
-type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock" | "inactive";
+type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock" | "inactive" | "no_image";
+
+/**
+ * Read-only audit log of recent stock changes for a single product.
+ * Backed by `public.stock_movements` (migration 006) which the trigger
+ * populates automatically on every change to `products.stock` — admin
+ * edits, order placements, restores, future GRN/wastage entries.
+ *
+ * Rendered inside the product edit modal so the operator can see what
+ * happened to the count without leaving the page.
+ */
+function StockHistoryPanel({ productId }: { productId: string }) {
+  const { movements, loading } = useStockMovements(productId, 20);
+
+  if (loading) {
+    return (
+      <div className="text-xs text-gray-500 py-2">Loading stock history…</div>
+    );
+  }
+  if (movements.length === 0) {
+    return (
+      <div className="text-xs text-gray-500 py-2">
+        No stock changes recorded yet. Future edits + order placements will
+        appear here.
+      </div>
+    );
+  }
+
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <table className="w-full text-xs">
+        <thead className="bg-gray-50 text-gray-600">
+          <tr>
+            <th className="text-left px-3 py-2 font-medium">When</th>
+            <th className="text-right px-3 py-2 font-medium">Δ</th>
+            <th className="text-right px-3 py-2 font-medium">Before → After</th>
+            <th className="text-left px-3 py-2 font-medium">Reason</th>
+            <th className="text-left px-3 py-2 font-medium">Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          {movements.map((m) => {
+            const sign = m.delta > 0 ? "+" : "";
+            const tone =
+              m.delta > 0
+                ? "text-indian-green"
+                : m.delta < 0
+                  ? "text-red-500"
+                  : "text-gray-500";
+            return (
+              <tr key={m.id} className="border-t border-gray-100">
+                <td className="px-3 py-2 text-gray-600 whitespace-nowrap">
+                  {new Date(m.created_at).toLocaleString()}
+                </td>
+                <td className={`px-3 py-2 text-right font-semibold ${tone}`}>
+                  {sign}
+                  {m.delta}
+                </td>
+                <td className="px-3 py-2 text-right text-gray-600">
+                  {m.before_stock} → {m.after_stock}
+                </td>
+                <td className="px-3 py-2 text-brown">{m.reason}</td>
+                <td className="px-3 py-2 text-gray-500">{m.source}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
 
 export default function AdminProductsPage() {
   const { products, loading, refetch } = useAllProducts();
+  const { categories } = useCategories();
   const [search, setSearch] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
@@ -87,22 +170,34 @@ export default function AdminProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  // Find Images picker — opens a sub-modal over the edit form. When it
+  // applies, it writes the new image_url/image_urls to Supabase directly
+  // and we mirror those values onto the local form so the user sees the
+  // result without re-fetching.
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // ─── Category aggregation ─────────────────────────
+  // Drives both the sidebar counts AND the per-row Category label. Uses the
+  // real categories (live mode = Supabase UUIDs; demo mode = "1".."20") so
+  // that products.category_id === categories.id actually matches. Before
+  // this, the page hardcoded String(i+1) as the id which never matched the
+  // UUIDs returned by Supabase, leaving every count at 0 and the table's
+  // Category column blank.
   const categoryStats = useMemo(() => {
-    return CATEGORIES_SEED.map((cat, i) => {
-      const id = String(i + 1);
-      const inCat = products.filter((p) => p.category_id === id);
+    return categories.map((cat) => {
+      const inCat = products.filter((p) => p.category_id === cat.id);
       return {
-        id,
-        ...cat,
+        id: cat.id,
+        name: cat.name,
+        name_hi: cat.name_hi,
+        icon: cat.icon,
         total: inCat.length,
         inStock: inCat.filter((p) => p.stock > 0 && p.active).length,
         lowStock: inCat.filter((p) => p.stock > 0 && p.stock < LOW_STOCK_THRESHOLD).length,
         outOfStock: inCat.filter((p) => p.stock === 0).length,
       };
     });
-  }, [products]);
+  }, [products, categories]);
 
   const overallStats = useMemo(() => {
     return {
@@ -111,6 +206,10 @@ export default function AdminProductsPage() {
       lowStock: products.filter((p) => p.stock > 0 && p.stock < LOW_STOCK_THRESHOLD).length,
       outOfStock: products.filter((p) => p.stock === 0).length,
       inactive: products.filter((p) => !p.active).length,
+      // "No image" — used by the missing-images filter so the operator can
+      // walk straight through the catalog backlog (~1100 SKUs at time of
+      // writing) without scrolling past products that already have shots.
+      noImage: products.filter((p) => !p.image_url).length,
     };
   }, [products]);
 
@@ -129,6 +228,8 @@ export default function AdminProductsPage() {
           return p.stock === 0;
         case "inactive":
           return !p.active;
+        case "no_image":
+          return !p.image_url;
       }
       return true;
     });
@@ -174,7 +275,11 @@ export default function AdminProductsPage() {
   // ─── Form helpers ─────────────────────────────────
   const openCreate = () => {
     setEditingId(null);
-    setForm({ ...emptyForm, category_id: selectedCategoryId || "1" });
+    // Default to the sidebar-selected category, else the first real category
+    // from the live list. Falls back to "" if categories haven't loaded yet —
+    // the <select> below will pick its first option on render.
+    const fallback = categories[0]?.id ?? "";
+    setForm({ ...emptyForm, category_id: selectedCategoryId || fallback });
     setModalOpen(true);
   };
 
@@ -186,10 +291,12 @@ export default function AdminProductsPage() {
       name_hi: p.name_hi,
       description: p.description || "",
       category_id: p.category_id,
+      subcategory: p.subcategory ?? "",
       price: p.price,
       mrp: p.mrp,
       unit: p.unit,
       image_url: p.image_url,
+      image_urls: p.image_urls ?? [],
       stock: p.stock,
       active: p.active,
       // Load existing detail fields
@@ -259,10 +366,12 @@ export default function AdminProductsPage() {
       name_hi: f.name_hi,
       description: nullable(f.description),
       category_id: f.category_id,
+      subcategory: nullable(f.subcategory),
       price: f.price,
       mrp: f.mrp,
       unit: f.unit,
       image_url: f.image_url,
+      image_urls: f.image_urls,
       stock: f.stock,
       active: f.active,
       nutrition_per_100g: hasAnyNutrition ? nutrition : null,
@@ -495,20 +604,43 @@ export default function AdminProductsPage() {
               />
             </div>
             <div className="flex items-center gap-1 overflow-x-auto">
-              {(["all", "in_stock", "low_stock", "out_of_stock", "inactive"] as StockFilter[]).map(
-                (f) => (
-                  <button
-                    key={f}
-                    onClick={() => setStockFilter(f)}
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap capitalize transition-colors ${
-                      stockFilter === f
-                        ? "bg-saffron text-white"
-                        : "bg-white text-brown-light border border-gray-200 hover:border-saffron"
-                    }`}
-                  >
-                    {f.replace("_", " ")}
-                  </button>
-                ),
+              {(["all", "in_stock", "low_stock", "out_of_stock", "inactive", "no_image"] as StockFilter[]).map(
+                (f) => {
+                  // Show the count next to "no_image" since it's the
+                  // backlog the operator is most likely walking through.
+                  const count =
+                    f === "no_image"
+                      ? overallStats.noImage
+                      : f === "out_of_stock"
+                        ? overallStats.outOfStock
+                        : f === "low_stock"
+                          ? overallStats.lowStock
+                          : f === "inactive"
+                            ? overallStats.inactive
+                            : f === "in_stock"
+                              ? overallStats.inStock
+                              : null;
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setStockFilter(f)}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap capitalize transition-colors ${
+                        stockFilter === f
+                          ? "bg-saffron text-white"
+                          : "bg-white text-brown-light border border-gray-200 hover:border-saffron"
+                      }`}
+                    >
+                      {f === "no_image" ? "missing image" : f.replace("_", " ")}
+                      {count !== null && (
+                        <span
+                          className={`ml-1.5 ${stockFilter === f ? "text-white/80" : "text-gray-400"}`}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                },
               )}
             </div>
           </div>
@@ -717,6 +849,97 @@ export default function AdminProductsPage() {
             value={form.image_url}
             onChange={(url) => updateField("image_url", url)}
           />
+          {/* Gallery (image_urls[]) — additional angles like BoP, ingredient
+              label, side shots. The Find Images picker writes both image_url
+              and image_urls[], but until now there was no way to see or
+              edit the gallery from the admin. Showing them here lets the
+              operator delete a bad angle without re-running the picker. */}
+          {form.image_urls.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-brown-light">
+                  Gallery angles ({form.image_urls.length})
+                </label>
+                <button
+                  type="button"
+                  onClick={() => updateField("image_urls", [])}
+                  className="text-[11px] text-red-500 hover:underline"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {form.image_urls.map((url, idx) => (
+                  <div
+                    key={url + idx}
+                    className="relative group border-2 border-gray-200 rounded-xl overflow-hidden bg-gray-50"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Angle ${idx + 2}`}
+                      className="w-full aspect-square object-contain"
+                    />
+                    <div className="absolute top-1 left-1 bg-white/90 text-[10px] font-bold text-brown px-1.5 py-0.5 rounded">
+                      #{idx + 2}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        updateField(
+                          "image_urls",
+                          form.image_urls.filter((_, i) => i !== idx),
+                        );
+                      }}
+                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Remove this angle"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="absolute bottom-1 left-1 flex gap-0.5 opacity-0 group-hover:opacity-100">
+                      {/* Promote to FoP — swaps this angle with the current FoP */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentFop = form.image_url;
+                          const rest = form.image_urls.slice();
+                          rest[idx] = currentFop ?? rest[idx];
+                          updateField("image_url", url);
+                          updateField("image_urls", currentFop ? rest : rest.filter((_, i) => i !== idx));
+                        }}
+                        className="bg-white text-brown text-[9px] font-bold px-1.5 py-0.5 rounded shadow"
+                        title="Make this the front-of-pack"
+                      >
+                        ↑ FoP
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[10px] text-gray-500 mt-1.5">
+                Hover an image to delete or promote it to the front-of-pack.
+              </p>
+            </div>
+          )}
+          {/* Find Images — only for existing products (the picker uploads
+              directly via the productId, which we don't have until save). */}
+          {editingId && (
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPickerOpen(true)}
+                className="w-full"
+              >
+                <Search className="w-4 h-4" />
+                <span className="ml-2">Find images from the web</span>
+              </Button>
+              <p className="text-[11px] text-gray-500 mt-1.5">
+                Searches Blinkit, Zepto, JioMart, BigBasket, Amazon.in and brand sites.
+                Pick the front-of-pack first, then any angles you want as gallery shots.
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <Input
               label="Name (English)"
@@ -744,13 +967,39 @@ export default function AdminProductsPage() {
               onChange={(e) => updateField("category_id", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-brown focus:outline-none focus:border-saffron"
             >
-              {CATEGORIES_SEED.map((cat, i) => (
-                <option key={cat.name} value={String(i + 1)}>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
                   {cat.icon} {cat.name}
                 </option>
               ))}
             </select>
           </div>
+          {/* Subcategory — options depend on the picked category (migration 012) */}
+          {(() => {
+            const catName = categories.find((c) => c.id === form.category_id)?.name;
+            const subs = subcatsFor(catName);
+            if (!subs.length) return null;
+            return (
+              <div>
+                <label className="block text-sm font-medium text-brown-light mb-1.5">
+                  Subcategory
+                </label>
+                <select
+                  value={form.subcategory}
+                  onChange={(e) => updateField("subcategory", e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-brown focus:outline-none focus:border-saffron"
+                >
+                  <option value="">— none —</option>
+                  {subs.map((sc) => (
+                    <option key={sc.name} value={sc.name}>
+                      {sc.icon ? `${sc.icon} ` : ""}
+                      {sc.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-3 gap-3">
             <Input
               label="Price (₹)"
@@ -771,6 +1020,14 @@ export default function AdminProductsPage() {
               onChange={(e) => updateField("stock", Number(e.target.value))}
             />
           </div>
+          {editingId && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-brown-light">
+                Stock history (last 20 changes)
+              </label>
+              <StockHistoryPanel productId={editingId} />
+            </div>
+          )}
           <Input
             label="Unit"
             value={form.unit}
@@ -945,7 +1202,7 @@ export default function AdminProductsPage() {
                   label="Customer Care Email"
                   value={form.customer_care_email}
                   onChange={(e) => updateField("customer_care_email", e.target.value)}
-                  placeholder="support@atalmart.in"
+                  placeholder="webtask7777@gmail.com"
                 />
                 <Input
                   label="Customer Care Phone"
@@ -970,6 +1227,45 @@ export default function AdminProductsPage() {
           </Button>
         </div>
       </Modal>
+
+      {/* Find Images picker — DDG-powered candidate search. Renders as a
+          second modal on top of the edit form. The picker writes directly
+          to Supabase (storage + DB patch), so when it returns we mirror
+          the new URLs onto the local form for instant UI feedback.
+
+          "Apply & next" lets the operator walk through the missing-image
+          backlog without closing the picker — we find the next product
+          without an image_url and swap the picker's props in place. */}
+      {pickerOpen && editingId && (
+        <FindImagesPicker
+          productId={editingId}
+          productName={form.name}
+          productUnit={form.unit}
+          currentImageUrl={form.image_url}
+          onClose={() => setPickerOpen(false)}
+          onApplied={(next) => {
+            updateField("image_url", next.image_url);
+            updateField("image_urls", next.image_urls ?? []);
+            refetch();
+          }}
+          onApplyAndNext={() => {
+            // Find the next product with no image_url in the same filtered
+            // list. If none, close. This works best when the user has the
+            // "missing image" stock filter active — the queue is exactly
+            // the backlog they're walking.
+            const candidates = filtered.filter(
+              (p) => !p.image_url && p.id !== editingId,
+            );
+            const next = candidates[0];
+            if (next) {
+              openEdit(next);
+            } else {
+              setPickerOpen(false);
+              toast.success("All caught up — no more missing-image products in this filter.");
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

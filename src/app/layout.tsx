@@ -25,9 +25,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Atalmart — Atal Nagar ki Atal Delivery",
+  metadataBase: new URL("https://atalmart.com"),
+  title: {
+    default: "Atalmart — Atal Nagar ki Atal Delivery",
+    template: "%s — Atalmart",
+  },
   description:
-    "Naya Raipur ka apna 10-minute delivery app. Groceries, dairy, snacks aur daily essentials — seedha aapke darwaze pe.",
+    "Naya Raipur ka apna quick delivery app. Groceries, dairy, snacks aur daily essentials — seedha aapke darwaze pe.",
   keywords: [
     "Atalmart",
     "Atal Nagar",
@@ -36,7 +40,7 @@ export const metadata: Metadata = {
     "Chhattisgarh",
     "delivery",
     "grocery",
-    "10 minute delivery",
+    "quick delivery",
     "online grocery",
     "daily essentials",
   ],
@@ -52,7 +56,7 @@ export const metadata: Metadata = {
     siteName: "Atalmart",
     title: "Atalmart — Atal Nagar ki Atal Delivery",
     description:
-      "10-minute grocery delivery in Naya Raipur. Groceries, dairy, snacks aur daily essentials.",
+      "Quick grocery delivery in Naya Raipur. Groceries, dairy, snacks aur daily essentials.",
   },
   icons: {
     icon: [

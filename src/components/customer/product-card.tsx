@@ -115,7 +115,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <svg className="w-2.5 h-2.5" viewBox="0 0 20 20" fill="currentColor">
             <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .2.08.39.22.53l3 3a.75.75 0 101.06-1.06L10.75 9.69V5z" />
           </svg>
-          10 MIN
+          QUICK
         </div>
 
         {/* Product name */}

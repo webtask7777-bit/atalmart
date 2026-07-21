@@ -67,6 +67,40 @@ export async function createRazorpayOrder(params: {
   return (await res.json()) as RazorpayOrder;
 }
 
+export interface RazorpayPayment {
+  id: string; // pay_xxx
+  order_id: string | null; // order_xxx this payment belongs to
+  amount: number; // in paise
+  currency: string;
+  status: string; // 'created' | 'authorized' | 'captured' | 'refunded' | 'failed'
+}
+
+/**
+ * Fetch a payment by id from Razorpay. Used server-side at order-placement time
+ * to confirm a payment was actually CAPTURED for the canonical amount before we
+ * write the order row — the signature alone proves the payment belongs to our
+ * order, but not that it succeeded or that the amount matches what's owed.
+ * Throws on any non-2xx so the caller can reject placement.
+ */
+export async function fetchRazorpayPayment(params: {
+  paymentId: string;
+  keyId: string;
+  keySecret: string;
+}): Promise<RazorpayPayment> {
+  const { paymentId, keyId, keySecret } = params;
+  const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+  const res = await fetch(`${RAZORPAY_API}/payments/${paymentId}`, {
+    headers: { authorization: `Basic ${auth}` },
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(
+      `Razorpay payment fetch failed (${res.status}): ${detail.slice(0, 300)}`,
+    );
+  }
+  return (await res.json()) as RazorpayPayment;
+}
+
 /** Constant-time string compare that won't throw on length mismatch. */
 function safeEqualHex(a: string, b: string): boolean {
   const ab = Buffer.from(a, "utf8");

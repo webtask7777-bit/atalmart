@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import ExcelJS from "exceljs";
 import { CATEGORIES_SEED } from "@/lib/constants";
+import { requireRole } from "@/lib/supabase/auth-guard";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,11 @@ const HEADERS = [
 ] as const;
 
 export async function POST(req: NextRequest) {
+  const guard = await requireRole("admin");
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
+  }
+
   try {
     const form = await req.formData();
     const file = form.get("file");

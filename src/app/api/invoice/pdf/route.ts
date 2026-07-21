@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     storeAddress:
       storeSettings?.storeAddress ||
       "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
-    contactEmail: storeSettings?.contactEmail || "support@atalmart.in",
+    contactEmail: storeSettings?.contactEmail || "webtask7777@gmail.com",
     // No placeholder fallback — print phone only if the admin has set a real one.
     contactPhone: storeSettings?.contactPhone || "",
   };

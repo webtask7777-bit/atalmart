@@ -138,7 +138,7 @@ export function Footer() {
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-xs text-gray-400">
           Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018 ·{" "}
-          <span className="text-saffron">support@atalmart.in</span>
+          <span className="text-saffron">webtask7777@gmail.com</span>
           <br className="sm:hidden" />
           <span className="hidden sm:inline"> · </span>
           &copy; {new Date().getFullYear()} {APP_NAME} · Incorporated{" "}

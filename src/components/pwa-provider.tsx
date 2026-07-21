@@ -2,18 +2,17 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Download, X, Smartphone } from "lucide-react";
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-};
+import { usePwaStore, type BeforeInstallPromptEvent } from "@/lib/store/pwa";
 
 const DISMISSED_KEY = "atalmart_pwa_install_dismissed_at";
 const REPROMPT_DAYS = 14;
 
 export function PWAProvider() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
+  const setPrompt = usePwaStore((s) => s.setPrompt);
+  const setIos = usePwaStore((s) => s.setIos);
+  const setStandalone = usePwaStore((s) => s.setStandalone);
+  const setInstalled = usePwaStore((s) => s.setInstalled);
+  const promptInstall = usePwaStore((s) => s.promptInstall);
   const [showBanner, setShowBanner] = useState(false);
   const [iosHint, setIosHint] = useState(false);
 
@@ -40,13 +39,14 @@ export function PWAProvider() {
 
     const onBeforeInstall = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setPrompt(e as BeforeInstallPromptEvent);
       if (shouldShowBanner()) setShowBanner(true);
     };
 
     const onInstalled = () => {
       setShowBanner(false);
-      setDeferredPrompt(null);
+      setPrompt(null);
+      setInstalled(true);
     };
 
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
@@ -59,6 +59,8 @@ export function PWAProvider() {
       ("standalone" in window.navigator &&
         (window.navigator as Navigator & { standalone?: boolean }).standalone) ||
       window.matchMedia("(display-mode: standalone)").matches;
+    setIos(isIos);
+    setStandalone(Boolean(standalone));
     if (isIos && !standalone && shouldShowBanner()) {
       setIosHint(true);
       setShowBanner(true);
@@ -68,16 +70,13 @@ export function PWAProvider() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [setPrompt, setIos, setStandalone, setInstalled]);
 
   const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) return;
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    const outcome = await promptInstall();
     if (outcome === "dismissed") localStorage.setItem(DISMISSED_KEY, String(Date.now()));
-    setDeferredPrompt(null);
     setShowBanner(false);
-  }, [deferredPrompt]);
+  }, [promptInstall]);
 
   const handleDismiss = useCallback(() => {
     localStorage.setItem(DISMISSED_KEY, String(Date.now()));

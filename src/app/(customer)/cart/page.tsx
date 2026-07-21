@@ -30,7 +30,9 @@ export default function CartPage() {
     return (
       <div className="max-w-lg mx-auto px-4 py-20 text-center">
         <div className="text-6xl mb-4">🛒</div>
-        <h2 className="text-xl font-bold text-brown mb-2">Cart is Empty</h2>
+        {/* h1, not h2 — the empty state is the whole page (crawlers land here
+            with no cart), so it must carry the page heading. */}
+        <h1 className="text-xl font-bold text-brown mb-2">Cart is Empty</h1>
         <p className="text-gray-500 mb-6">
           Add some items to get started with your order
         </p>

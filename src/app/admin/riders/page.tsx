@@ -286,6 +286,7 @@ export default function AdminRidersPage() {
               assignments={selectedRiderId === s.rider.id ? selectedAssignments : []}
               onEdit={() => openEdit(s.rider)}
               onDelete={() => handleDelete(s.rider.id, s.rider.name)}
+              onRefresh={refetch}
             />
           ))}
           {riderStats.length === 0 && (
@@ -359,6 +360,7 @@ function RiderCard({
   assignments,
   onEdit,
   onDelete,
+  onRefresh,
 }: {
   stats: RiderStats;
   expanded: boolean;
@@ -366,6 +368,7 @@ function RiderCard({
   assignments: Order[];
   onEdit: () => void;
   onDelete: () => void;
+  onRefresh: () => void;
 }) {
   const r = stats.rider;
   return (
@@ -439,6 +442,55 @@ function RiderCard({
 
       {expanded && (
         <div className="border-t border-gray-100 p-4 bg-gray-50/40">
+          {/* Rider-app login credentials */}
+          <div className="bg-white rounded-xl border border-saffron/30 p-3 mb-3">
+            <h4 className="text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-2 flex items-center gap-1">
+              <Bike size={10} className="text-saffron" />
+              Rider app login
+            </h4>
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <div>
+                <p className="text-gray-500 text-xs">Phone</p>
+                <p className="font-mono font-semibold text-brown">{r.phone}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Access code</p>
+                <p className="font-mono font-bold text-saffron text-lg tracking-widest">
+                  {r.access_code || "—"}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <button
+                  onClick={() => {
+                    const text = `Atalmart Rider app\nLink: ${typeof window !== "undefined" ? window.location.origin : ""}/rider\nPhone: ${r.phone}\nCode: ${r.access_code || ""}`;
+                    navigator.clipboard?.writeText(text);
+                    toast.success("Login details copied");
+                  }}
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-saffron-light text-saffron hover:bg-orange-100"
+                >
+                  Copy
+                </button>
+                <button
+                  onClick={async () => {
+                    const code = String(Math.floor(100000 + Math.random() * 900000));
+                    const { error } = await updateRider(r.id, { access_code: code });
+                    if (error) toast.error("Code change nahi hua");
+                    else {
+                      toast.success(`New code: ${code}`);
+                      onRefresh();
+                    }
+                  }}
+                  className="text-xs font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                >
+                  New code
+                </button>
+              </div>
+            </div>
+            <p className="text-[10px] text-gray-400 mt-2">
+              Rider <code className="bg-gray-100 px-1 rounded">/rider</code> par jaakar phone + code se login kare.
+            </p>
+          </div>
+
           {/* Mobile KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
             <Detail label="Total assigned" value={stats.total} />

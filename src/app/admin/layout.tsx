@@ -19,7 +19,7 @@ import {
   QrCode,
   Megaphone,
 } from "lucide-react";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/ui/logo";
 import { AppProviders } from "@/components/providers";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { ConfirmDialogRoot } from "@/components/ui/confirm-dialog";
@@ -124,12 +124,9 @@ function AdminSidebar({ children }: { children: React.ReactNode }) {
       <aside className="w-60 bg-brown text-cream shrink-0 hidden md:flex flex-col">
         <div className="p-5 border-b border-gray-700">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-saffron rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">A</span>
-            </div>
             <div>
-              <h1 className="text-sm font-bold text-saffron">{APP_NAME}</h1>
-              <p className="text-[10px] text-gray-400">Admin Panel</p>
+              <Logo onDark className="text-lg" />
+              <p className="text-[10px] text-gray-400 mt-0.5">Admin Panel</p>
             </div>
           </div>
         </div>

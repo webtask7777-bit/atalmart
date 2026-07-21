@@ -31,7 +31,12 @@ type InputProps = InputModeProps | TextareaModeProps;
  */
 export const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(
   function Input(props, ref) {
-    const { label, error, className = "" } = props;
+    // Pull out the non-DOM props (and `className`, which we MERGE into the
+    // shared styling). Everything else is spread onto the element. Critically,
+    // `className` must NOT be in `rest` — otherwise the spread would clobber
+    // `className={sharedClasses}` and strip the input's entire base styling
+    // (border/bg/padding) whenever a caller passes a className.
+    const { label, error, className = "", as, ...rest } = props;
     const sharedClasses = `
       w-full px-4 py-3 rounded-xl border-2 border-gray-200
       bg-white text-brown placeholder:text-gray-400
@@ -48,17 +53,17 @@ export const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputPro
             {label}
           </label>
         )}
-        {props.as === "textarea" ? (
+        {as === "textarea" ? (
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
             className={sharedClasses}
-            {...(props as TextareaHTMLAttributes<HTMLTextAreaElement>)}
+            {...(rest as TextareaHTMLAttributes<HTMLTextAreaElement>)}
           />
         ) : (
           <input
             ref={ref as React.Ref<HTMLInputElement>}
             className={sharedClasses}
-            {...(props as InputHTMLAttributes<HTMLInputElement>)}
+            {...(rest as InputHTMLAttributes<HTMLInputElement>)}
           />
         )}
         {error && <p className="mt-1 text-sm text-red-500">{error}</p>}

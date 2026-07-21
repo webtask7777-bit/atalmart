@@ -15,6 +15,12 @@ import {
   Minus,
 } from "lucide-react";
 import { useProduct, useProducts } from "@/lib/hooks/use-products";
+import { AgeGate } from "@/components/customer/age-gate";
+import {
+  useAgeGateStore,
+  useAgeGateHydrated,
+  isAgeRestricted,
+} from "@/lib/store/age-gate";
 import { useCartStore } from "@/lib/store/cart";
 import { useWishlistStore } from "@/lib/store/wishlist";
 import { toast } from "sonner";
@@ -26,6 +32,7 @@ import { FREE_DELIVERY_ABOVE } from "@/lib/constants";
 import { formatRupees } from "@/lib/money";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/supabase/helpers";
+import { shuffleForGrid } from "@/lib/product-order";
 import type { ProductVariant } from "@/types";
 
 // ── Sibling size detection ───────────────────────────────────────
@@ -110,12 +117,24 @@ export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { product, loading } = useProduct(params.id);
+
+  // Reset window scroll on every product navigation. Without this, switching
+  // between products keeps the previous scroll position (Next 16 App Router
+  // restores scroll for same-route id changes, which feels broken on a card
+  // grid where you've scrolled deep before tapping a product).
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [params.id]);
   const { products: related } = useProducts({
     categoryId: product?.category_id ?? null,
   });
 
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
   const { has: isWishlisted, toggle: toggleWishlist } = useWishlistStore();
+
+  // 18+ gate — block deep-links to tobacco (Paan Corner) products until confirmed.
+  const ageVerified = useAgeGateStore((s) => s.verified);
+  const ageHydrated = useAgeGateHydrated();
 
   // ── Sibling size products (same base name, different sizes) ────
   const siblings = useSiblingProducts(product);
@@ -198,6 +217,15 @@ export default function ProductDetailPage() {
     );
   }
 
+  // 18+ gate for tobacco products — shown in place of the whole detail view.
+  if (isAgeRestricted(product.category?.name) && ageHydrated && !ageVerified) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-10">
+        <AgeGate onDecline={() => router.push("/")} />
+      </div>
+    );
+  }
+
   // Active pricing source — variant overrides product when selected.
   const displayPrice = selectedVariant?.price ?? product.price;
   const displayMrp = selectedVariant?.mrp ?? product.mrp;
@@ -210,7 +238,13 @@ export default function ProductDetailPage() {
   const discount = Math.round(((displayMrp - displayPrice) / displayMrp) * 100);
   const savings = displayMrp - displayPrice;
   const inStock = displayStock > 0;
-  const relatedFiltered = related.filter((p) => p.id !== product.id).slice(0, 6);
+  // Shuffle first, THEN slice — otherwise the top 6 in name-sorted order are
+  // almost always sibling sizes of the same product (e.g. all the Aashirvaad
+  // Rava Idli Mix sizes in a row). Stable shuffle keeps the order consistent
+  // across reloads while scattering sizes apart.
+  const relatedFiltered = shuffleForGrid(
+    related.filter((p) => p.id !== product.id),
+  ).slice(0, 6);
 
   return (
     <div className="pb-32 md:pb-12">
@@ -329,7 +363,7 @@ export default function ProductDetailPage() {
               </div>
               <span className="shrink-0 inline-flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold text-gray-700">
                 <Clock size={11} />
-                10 MIN
+                QUICK
               </span>
             </div>
 
@@ -481,7 +515,7 @@ export default function ProductDetailPage() {
 
             {/* Promise strip */}
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <PromiseChip icon={<Clock size={16} />} label="10 min" sub="delivery" />
+              <PromiseChip icon={<Clock size={16} />} label="Quick" sub="delivery" />
               <PromiseChip
                 icon={<Truck size={16} />}
                 label={`Free above`}

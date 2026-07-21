@@ -17,12 +17,46 @@ import {
   AlertCircle,
   Sparkles,
   MessageCircle,
+  Power,
+  Zap,
+  Clock,
 } from "lucide-react";
+import type { StoreStatus } from "@/lib/store/settings";
 import { useSettingsStore, type SiteSettings } from "@/lib/store/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { confirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+
+const STORE_STATUS_OPTIONS: {
+  value: StoreStatus;
+  label: string;
+  sub: string;
+  icon: typeof Power;
+  activeCls: string;
+}[] = [
+  {
+    value: "open",
+    label: "Open",
+    sub: "Normal",
+    icon: Power,
+    activeCls: "border-indian-green bg-green-light text-indian-green",
+  },
+  {
+    value: "busy",
+    label: "Busy",
+    sub: "Rush — paused",
+    icon: Zap,
+    activeCls: "border-amber-500 bg-amber-50 text-amber-600",
+  },
+  {
+    value: "opening_soon",
+    label: "Opening Soon",
+    sub: "Pre-launch",
+    icon: Clock,
+    activeCls: "border-saffron bg-saffron-light text-saffron",
+  },
+];
 
 export default function SettingsAdminPage() {
   const { settings, update, reset } = useSettingsStore();
@@ -81,6 +115,46 @@ export default function SettingsAdminPage() {
       </div>
 
       <div className="space-y-6">
+        {/* Store availability — rush handling + pre-launch */}
+        <Section icon={<Power size={16} className="text-red-500" />} title="Store availability">
+          <p className="text-xs text-gray-500 -mt-1">
+            Customers ko live board dikhta hai.{" "}
+            <span className="font-semibold text-brown">Busy</span> ya{" "}
+            <span className="font-semibold text-brown">Opening Soon</span> pe naye
+            orders apne aap paused ho jaate hain.
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {STORE_STATUS_OPTIONS.map((opt) => {
+              const active = form.storeStatus === opt.value;
+              const Icon = opt.icon;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => set("storeStatus", opt.value)}
+                  className={`flex flex-col items-center gap-1 rounded-xl border-2 px-2 py-3 text-center transition-colors ${
+                    active
+                      ? opt.activeCls
+                      : "border-gray-200 bg-white hover:border-gray-300"
+                  }`}
+                >
+                  <Icon size={18} className={active ? "" : "text-gray-400"} />
+                  <span className="text-sm font-bold leading-tight">{opt.label}</span>
+                  <span className="text-[10px] leading-tight opacity-80">{opt.sub}</span>
+                </button>
+              );
+            })}
+          </div>
+          {form.storeStatus !== "open" && (
+            <Input
+              label="Custom board message (optional)"
+              value={form.storeStatusMessage}
+              onChange={(e) => set("storeStatusMessage", e.target.value)}
+              placeholder="Khaali = default message use hoga"
+            />
+          )}
+        </Section>
+
         {/* General */}
         <Section icon={<Store size={16} className="text-saffron" />} title="General">
           <Input

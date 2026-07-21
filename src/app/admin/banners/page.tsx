@@ -240,7 +240,7 @@ export default function BannersAdminPage() {
             label="Title"
             value={form.title}
             onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            placeholder="10-minute delivery"
+            placeholder="Quick delivery"
           />
           <Input
             label="Subtitle"

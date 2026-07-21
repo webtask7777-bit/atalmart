@@ -106,9 +106,18 @@ export interface PayWithRazorpayParams {
   themeColor?: string;
 }
 
+export interface RazorpayPayResult {
+  paymentId: string;
+  /** Full proof — forwarded to /api/orders/place so the server re-verifies the
+   *  signature + captured amount before writing the order. */
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
 export async function payWithRazorpay(
   params: PayWithRazorpayParams,
-): Promise<{ paymentId: string }> {
+): Promise<RazorpayPayResult> {
   // 1. Create the order on our server.
   const createRes = await fetch("/api/payments/razorpay/create-order", {
     method: "POST",
@@ -149,7 +158,7 @@ export async function payWithRazorpay(
   }
 
   // 3. Open the modal and wait for the result.
-  return new Promise<{ paymentId: string }>((resolve, reject) => {
+  return new Promise<RazorpayPayResult>((resolve, reject) => {
     let settled = false;
 
     const rzp = new window.Razorpay!({
@@ -177,6 +186,9 @@ export async function payWithRazorpay(
             settled = true;
             resolve({
               paymentId: verifyData.paymentId || response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
             });
           } else {
             settled = true;

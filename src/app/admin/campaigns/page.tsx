@@ -551,7 +551,7 @@ function QrModal({
 
           <p className="text-[11px] text-gray-500 text-center">
             Print at 4×4 inch or larger for reliable scanning. Add{" "}
-            <b>&ldquo;Scan to order in 10 min&rdquo;</b> as caption.
+            <b>&ldquo;Scan to order — quick delivery&rdquo;</b> as caption.
           </p>
         </div>
       )}

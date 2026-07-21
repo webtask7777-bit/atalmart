@@ -149,8 +149,31 @@ export async function POST(req: NextRequest) {
           .from("coupons")
           .select("*")
           .eq("code", code.toUpperCase())
-          .single();
-        return (data as import("@/lib/constants").Coupon) || null;
+          .maybeSingle();
+        if (!data) return null;
+        // DB columns are snake_case; the Coupon type is camelCase. A raw
+        // `data as Coupon` cast leaves minOrder/maxDiscount/etc undefined,
+        // which silently breaks validateCoupon + calculateCouponDiscount.
+        // Keep this mapper in sync with rowToCoupon in src/lib/store/coupon.ts.
+        const r = data as Record<string, unknown>;
+        return {
+          code: r.code as string,
+          description: (r.description as string) ?? "",
+          type: r.type as "flat" | "percent",
+          value: Number(r.value),
+          minOrder: Number(r.min_order),
+          maxDiscount: r.max_discount == null ? undefined : Number(r.max_discount),
+          firstOrderOnly: r.first_order_only === true,
+          maxUsesPerUser:
+            r.max_uses_per_user == null ? undefined : Number(r.max_uses_per_user),
+          totalUsageLimit:
+            r.total_usage_limit == null ? undefined : Number(r.total_usage_limit),
+          totalUsageCount:
+            r.total_usage_count == null ? undefined : Number(r.total_usage_count),
+          campaignSource: (r.campaign_source as string) ?? undefined,
+          validForPincodes: (r.valid_for_pincodes as string) ?? undefined,
+          expiresAt: (r.expires_at as string) ?? undefined,
+        } as import("@/lib/constants").Coupon;
       },
       getUserOrderCount: async (uid) => {
         const { count } = await supabase
@@ -175,7 +198,7 @@ export async function POST(req: NextRequest) {
           .from("wallets")
           .select("balance")
           .eq("user_id", uid)
-          .single();
+          .maybeSingle();
         return (data as { balance: number } | null)?.balance || 0;
       },
       getDeliveryRules: async () => {
@@ -183,7 +206,8 @@ export async function POST(req: NextRequest) {
         const { data } = await supabase
           .from("settings")
           .select("delivery_fee, free_delivery_above")
-          .single();
+          .eq("id", 1)
+          .maybeSingle();
         const row = data as
           | { delivery_fee: number; free_delivery_above: number }
           | null;
