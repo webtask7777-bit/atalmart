@@ -7,11 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/ui/logo";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { createClient } from "@/lib/supabase/client";
+import {
+  sendOtp as msg91SendOtp,
+  verifyOtp as msg91VerifyOtp,
+  retryOtp as msg91RetryOtp,
+} from "@/lib/msg91-widget";
 import { toast } from "sonner";
 
 export default function AuthPage() {
   const router = useRouter();
-  const { user, profile, isDemo, signInWithOtp, verifyOtp, signInWithPassword, signOut, updateProfile } = useAuth();
+  const { user, profile, isDemo, signInWithPassword, signOut, updateProfile } = useAuth();
   // "phone" = customer phone-OTP, "otp" = OTP entry, "name" = first-time profile,
   // "admin" = email+password form for operators (created via Supabase Admin API).
   const [step, setStep] = useState<"phone" | "otp" | "name" | "admin">("phone");
@@ -73,30 +79,87 @@ export default function AuthPage() {
       return;
     }
     setLoading(true);
-    const { error } = await signInWithOtp(phone);
-    setLoading(false);
-    if (error) {
-      toast.error(error);
-      return;
+    try {
+      await msg91SendOtp(phone);
+      setStep("otp");
+      toast.success("OTP bheja gaya +91 " + phone);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "OTP bhejne me dikkat");
+    } finally {
+      setLoading(false);
     }
-    setStep("otp");
-    toast.success("OTP sent to +91 " + phone);
+  };
+
+  const handleResendOTP = async () => {
+    setLoading(true);
+    try {
+      await msg91RetryOtp();
+      toast.success("Naya OTP bhej diya");
+    } catch {
+      // Fall back to a fresh send if retry isn't available on this channel.
+      try {
+        await msg91SendOtp(phone);
+        toast.success("Naya OTP bhej diya");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "OTP dobara bhejne me dikkat");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleVerifyOTP = async () => {
-    if (otp.length !== 6) {
-      toast.error("Enter 6-digit OTP");
+    if (otp.length < 4) {
+      toast.error("Poora OTP daalein");
       return;
     }
     setLoading(true);
-    const { error } = await verifyOtp(phone, otp);
-    setLoading(false);
-    if (error) {
-      toast.error(error);
-      return;
+    try {
+      // 1) MSG91 verifies the OTP and returns a signed access token.
+      const accessToken = await msg91VerifyOtp(otp);
+      // 2) Our server re-verifies it and mints a Supabase session.
+      const res = await fetch("/api/auth/msg91", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ accessToken, phone }),
+      });
+      const data = (await res.json()) as {
+        access_token?: string;
+        refresh_token?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.access_token || !data.refresh_token) {
+        throw new Error(data.error || "Login complete nahi ho paya");
+      }
+      // 3) Adopt the session in the browser.
+      const supabase = createClient();
+      const { error: sessErr } = await supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+      });
+      if (sessErr) throw new Error(sessErr.message);
+
+      // First-time users have no name yet → collect it; returning users go on.
+      const {
+        data: { user: u },
+      } = await supabase.auth.getUser();
+      let hasName = false;
+      if (u) {
+        const { data: p } = await supabase
+          .from("profiles")
+          .select("name")
+          .eq("id", u.id)
+          .maybeSingle();
+        hasName = Boolean(p?.name);
+      }
+      toast.success("Verified!");
+      if (hasName) router.replace(next || "/");
+      else setStep("name");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "OTP verify nahi hua");
+    } finally {
+      setLoading(false);
     }
-    toast.success("Verified!");
-    setStep("name");
   };
 
   const handleSaveName = async () => {
@@ -249,7 +312,7 @@ export default function AuthPage() {
               Change phone number
             </button>
             <button
-              onClick={handleSendOTP}
+              onClick={handleResendOTP}
               disabled={loading}
               className="text-sm text-saffron hover:underline disabled:opacity-50"
             >
