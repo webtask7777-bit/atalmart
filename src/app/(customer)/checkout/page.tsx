@@ -59,7 +59,6 @@ export default function CheckoutPage() {
     codEnabled,
     onlinePaymentEnabled,
     serviceablePincodes,
-    razorpayEnabled,
   } = settings;
   const setUserPincode = useUserPincodeStore((s) => s.setPincode);
   const walletBalance = useWalletStore((s) => s.balance);
@@ -247,13 +246,10 @@ export default function CheckoutPage() {
     // placing the order. COD skips this entirely.
     let paymentProof: RazorpayPayResult | undefined;
     if (paymentMethod === "online" && priceData.total > 0) {
-      if (!razorpayEnabled) {
-        toast.error(
-          "Online payment is currently unavailable. Please choose Cash on Delivery.",
-        );
-        setLoading(false);
-        return;
-      }
+      // No client-side gate here: `razorpayEnabled` only lives in the
+      // admin's own localStorage, so customers would always see it false.
+      // The server is the source of truth — create-order returns
+      // `not_configured` (503) when env keys are missing, handled below.
       try {
         paymentProof = await payWithRazorpay({
           amount: priceData.total,
