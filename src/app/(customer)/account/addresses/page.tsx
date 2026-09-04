@@ -272,7 +272,7 @@ export default function AddressesPage() {
           {/* Pin-drop on map — saves lat/lng + validates service area live */}
           <div>
             <label className="block text-sm font-medium text-brown-light mb-2">
-              Map pe pin drop karein <span className="text-gray-400 font-normal">(optional, but recommended)</span>
+              Map pe pin drop karein <span className="text-gray-500 font-normal">(optional, but recommended)</span>
             </label>
             <PinDropPicker
               value={

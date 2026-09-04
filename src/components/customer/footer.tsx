@@ -1,5 +1,11 @@
 import Link from "next/link";
-import { APP_NAME, INCORPORATION_DATE } from "@/lib/constants";
+import {
+  APP_NAME,
+  INCORPORATION_DATE,
+  FSSAI_LICENSE,
+  GSTIN,
+  SUPPORT_EMAIL,
+} from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
 
 export function Footer() {
@@ -29,6 +35,7 @@ export function Footer() {
             ["About", "/about"],
             ["Contact", "/contact"],
             ["FAQs", "/faq"],
+            ["Refunds", "/refund-policy"],
             ["Terms", "/terms"],
             ["Privacy", "/privacy"],
           ].map(([label, href]) => (
@@ -50,6 +57,13 @@ export function Footer() {
           <p className="text-center text-[10px] text-gray-400 leading-snug">
             Incorporated {INCORPORATION_DATE}
           </p>
+          {(FSSAI_LICENSE || GSTIN) && (
+            <p className="text-center text-[10px] text-gray-400 leading-snug">
+              {FSSAI_LICENSE && <>FSSAI Lic. No. {FSSAI_LICENSE}</>}
+              {FSSAI_LICENSE && GSTIN && " · "}
+              {GSTIN && <>GSTIN {GSTIN}</>}
+            </p>
+          )}
         </div>
       </div>
 
@@ -123,6 +137,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/refund-policy" className="hover:text-saffron transition-colors">
+                  Cancellation &amp; Refunds
+                </Link>
+              </li>
+              <li>
                 <Link href="/terms" className="hover:text-saffron transition-colors">
                   Terms & Conditions
                 </Link>
@@ -138,11 +157,18 @@ export function Footer() {
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-xs text-gray-400">
           Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018 ·{" "}
-          <span className="text-saffron">webtask7777@gmail.com</span>
+          <span className="text-saffron">{SUPPORT_EMAIL}</span>
           <br className="sm:hidden" />
           <span className="hidden sm:inline"> · </span>
           &copy; {new Date().getFullYear()} {APP_NAME} · Incorporated{" "}
           {INCORPORATION_DATE} · Made with ❤️ in Atal Nagar.
+          {(FSSAI_LICENSE || GSTIN) && (
+            <p className="mt-1">
+              {FSSAI_LICENSE && <>FSSAI Lic. No. {FSSAI_LICENSE}</>}
+              {FSSAI_LICENSE && GSTIN && " · "}
+              {GSTIN && <>GSTIN {GSTIN}</>}
+            </p>
+          )}
         </div>
       </div>
     </footer>

@@ -25,7 +25,7 @@ const SEED: Banner[] = [
     ctaHref: "/",
     gradient: "from-saffron via-orange-500 to-red-500",
     illo: "🛒",
-    imgSrc: "/banners/delivery-rider-2.png",
+    imgSrc: "/banners/delivery-rider-2.webp",
     enabled: true,
     sortOrder: 1,
   },
@@ -50,7 +50,7 @@ const SEED: Banner[] = [
     ctaHref: "/",
     gradient: "from-purple-600 via-fuchsia-500 to-pink-500",
     illo: "🚚",
-    imgSrc: "/banners/delivery-rider.png",
+    imgSrc: "/banners/delivery-rider.webp",
     enabled: true,
     sortOrder: 3,
   },
@@ -65,7 +65,7 @@ const SEED: Banner[] = [
     ctaHref: "/product/9258f450-1fde-43e2-acca-77c0874a354a",
     gradient: "from-amber-600 via-orange-600 to-red-700",
     illo: "🌾",
-    imgSrc: "/banners/aashirvaad-atta.png",
+    imgSrc: "/banners/aashirvaad-atta.webp",
     enabled: true,
     sortOrder: 4,
   },
@@ -117,9 +117,10 @@ export const useBannerStore = create<BannerStore>()(
     {
       name: "atalmart-banners",
       // v1: b4 pointed at demo id /product/p31 with a made-up ₹265 price.
+      // v2: banner art moved from 700 KB PNGs to 50 KB WebPs (.png → .webp).
       // Bumping the version discards that stale persisted copy for existing
       // visitors so everyone gets the corrected seed.
-      version: 1,
+      version: 2,
       migrate: () => ({ banners: SEED }),
     },
   ),

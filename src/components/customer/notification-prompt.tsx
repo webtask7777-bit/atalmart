@@ -87,7 +87,7 @@ export function NotificationPrompt() {
         <button
           onClick={dismiss}
           aria-label="dismiss"
-          className="shrink-0 p-1 text-gray-400 hover:text-brown rounded-lg"
+          className="shrink-0 p-1 text-gray-500 hover:text-brown rounded-lg"
         >
           <X size={16} />
         </button>

@@ -103,7 +103,7 @@ export function ProductCard({ product }: ProductCardProps) {
           className={
             wishlisted
               ? "fill-red-500 text-red-500"
-              : "text-gray-400 hover:text-red-500"
+              : "text-gray-500 hover:text-red-500"
           }
         />
       </button>
@@ -128,7 +128,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <p className="text-[11px] text-gray-500 flex items-center gap-1">
             {displayUnit}
             {otherVariantCount > 0 && (
-              <span className="text-saffron font-semibold text-[10px]">
+              <span className="text-saffron-deep font-semibold text-[10px]">
                 +{otherVariantCount} sizes
               </span>
             )}
@@ -150,7 +150,7 @@ export function ProductCard({ product }: ProductCardProps) {
               ₹{displayPrice}
             </span>
             {discount > 0 && (
-              <span className="text-[11px] text-gray-400 line-through leading-tight">
+              <span className="text-[11px] text-gray-500 line-through leading-tight">
                 ₹{displayMrp}
               </span>
             )}

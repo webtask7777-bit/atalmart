@@ -72,7 +72,7 @@ export default function FaqPage() {
           >
             <summary className="text-sm font-semibold text-brown cursor-pointer list-none flex items-center justify-between gap-2">
               {f.q}
-              <span className="text-saffron shrink-0 transition-transform group-open:rotate-45 text-lg leading-none">
+              <span className="text-saffron-deep shrink-0 transition-transform group-open:rotate-45 text-lg leading-none">
                 +
               </span>
             </summary>

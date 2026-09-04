@@ -38,7 +38,7 @@ export function BottomNav() {
               <Link
                 href={href}
                 className={`flex flex-col items-center justify-center gap-0.5 py-1.5 px-1 text-[10px] font-semibold transition-colors ${
-                  active ? "text-saffron" : "text-gray-500 active:text-saffron"
+                  active ? "text-saffron-deep" : "text-gray-500 active:text-saffron-deep"
                 }`}
               >
                 <span className="relative">

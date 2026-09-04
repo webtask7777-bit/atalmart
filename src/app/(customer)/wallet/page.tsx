@@ -160,10 +160,10 @@ export default function WalletPage() {
                       {t.description}
                     </p>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-gray-400">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
                         {WALLET_TXN_LABELS[t.type]}
                       </span>
-                      <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                      <span className="text-[10px] text-gray-500 flex items-center gap-0.5">
                         <Calendar size={9} />
                         {new Date(t.created_at).toLocaleDateString("en-IN", {
                           day: "numeric",
@@ -181,7 +181,7 @@ export default function WalletPage() {
                       {isCredit ? "+" : "−"}₹
                       {Math.abs(t.amount).toLocaleString("en-IN")}
                     </p>
-                    <p className="text-[10px] text-gray-400 tabular-nums">
+                    <p className="text-[10px] text-gray-500 tabular-nums">
                       Bal: ₹{t.balanceAfter.toLocaleString("en-IN")}
                     </p>
                   </div>
@@ -193,7 +193,7 @@ export default function WalletPage() {
       </div>
 
       {/* Footer note */}
-      <p className="text-[11px] text-gray-400 mt-4 text-center leading-relaxed">
+      <p className="text-[11px] text-gray-500 mt-4 text-center leading-relaxed">
         Wallet credits never expire on refunds. Promo credits may have an
         expiry. For questions, contact webtask7777@gmail.com
       </p>

@@ -261,7 +261,7 @@ export default function TrackOrderPage({
                 <>
                   <Navigation size={11} className="text-indian-green animate-pulse" />
                   <span className="font-medium text-indian-green">Live</span>
-                  <span className="text-gray-400">
+                  <span className="text-gray-500">
                     · updated just now
                   </span>
                 </>
@@ -309,7 +309,7 @@ export default function TrackOrderPage({
                   </div>
                   <div className={`pb-6 ${isCurrent ? "font-medium" : ""}`}>
                     <p
-                      className={`text-sm ${isCompleted ? "text-brown" : "text-gray-400"}`}
+                      className={`text-sm ${isCompleted ? "text-brown" : "text-gray-500"}`}
                     >
                       {ORDER_STATUS_LABELS[status]}
                     </p>

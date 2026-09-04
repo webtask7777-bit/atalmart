@@ -36,13 +36,64 @@ if (
   }
 }
 
+const isDev = process.env.NODE_ENV !== "production";
+
+/**
+ * Content-Security-Policy.
+ *
+ * Every third party the browser talks to must be listed here — a missing
+ * origin silently breaks that feature (login, payment, maps), so when adding
+ * an integration add its origins in the same PR:
+ *   • Supabase       — data/auth/storage/realtime (connect)
+ *   • Razorpay       — Checkout.js (script), payment modal (frame), API (connect)
+ *   • MSG91/phone91  — OTP widget script + its iframe/API
+ *   • unpkg.com      — Leaflet JS/CSS for the service-area + rider maps
+ *   • OpenStreetMap  — map tiles (img)
+ *   • Vercel         — Analytics + Speed Insights beacons
+ *
+ * `'unsafe-inline'` for scripts is required by Next.js's inline bootstrap
+ * (no nonce plumbing yet); styles need it for Tailwind's inline vars.
+ * `'unsafe-eval'` is dev-only (React Refresh).
+ *
+ * Roll-out switch: set CSP_REPORT_ONLY=true to log violations without
+ * blocking (useful right after adding a new integration), then remove it.
+ */
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://checkout.razorpay.com https://*.razorpay.com https://verify.msg91.com https://verify.phone91.com https://*.msg91.com https://unpkg.com https://va.vercel-scripts.com`,
+  "style-src 'self' 'unsafe-inline' https://unpkg.com",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self'${isDev ? " ws: wss:" : ""} https://*.supabase.co wss://*.supabase.co https://*.razorpay.com https://*.msg91.com https://*.phone91.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://tile.openstreetmap.org`,
+  "frame-src 'self' https://*.razorpay.com https://*.msg91.com https://*.phone91.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "media-src 'self' data: blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  ...(isDev ? [] : ["upgrade-insecure-requests"]),
+].join("; ");
+
+const cspHeaderName =
+  process.env.CSP_REPORT_ONLY === "true"
+    ? "Content-Security-Policy-Report-Only"
+    : "Content-Security-Policy";
+
 const nextConfig: NextConfig = {
+  // A stray ~/package-lock.json makes Next infer the wrong workspace root
+  // (build warning + wrong file tracing). Pin it to this project.
+  turbopack: { root: __dirname },
+  outputFileTracingRoot: __dirname,
+
   // Security headers applied to every response
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: [
+          { key: cspHeaderName, value: csp },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -61,14 +112,23 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Allow Supabase storage images + the leaflet tile pattern used by the
-  // tracking map. Tighten this further once production CDN is decided.
   images: {
+    // Vercel's image optimizer quota was exhausted (402s broke every <Image>
+    // site-wide), so we don't use it at all. Instead a custom loader routes
+    // Supabase Storage URLs through Supabase's own transform endpoint
+    // (resize + WebP), and returns every other src untouched. See
+    // src/lib/image-loader.ts.
+    loader: "custom",
+    loaderFile: "./src/lib/image-loader.ts",
+    // Widths next/image may request. Product cards are ~124–200 px, the
+    // detail hero ≤ 500 px; keep the list short so srcset stays sane.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [64, 96, 128, 192, 256, 384],
     remotePatterns: [
       {
         protocol: "https",
         hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/**",
+        pathname: "/storage/v1/**",
       },
       {
         protocol: "https",

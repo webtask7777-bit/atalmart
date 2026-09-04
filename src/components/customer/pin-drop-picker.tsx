@@ -391,7 +391,7 @@ export function PinDropPicker({
             📍 {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
           </span>
           {checking && (
-            <span className="flex items-center gap-1 text-gray-400">
+            <span className="flex items-center gap-1 text-gray-500">
               <Loader2 size={10} className="animate-spin" /> Checking…
             </span>
           )}

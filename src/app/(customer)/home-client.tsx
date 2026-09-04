@@ -53,32 +53,60 @@ const CATEGORY_HERO_KEYWORDS: Record<string, string[]> = {
 // were removed — those tiles fall back to an auto-picked product photo until a
 // 2-product cover is provided.
 const CATEGORY_COVERS: Record<string, string> = {
-  "Atta, Rice & Dal": "/categories/atta-rice-dal.png",
-  Dairy: "/categories/dairy.png",
-  "Cold Drinks & Juices": "/categories/cold-drinks-juices.png",
-  "Snacks & Munchies": "/categories/snacks-munchies.png",
-  "Bakery & Biscuits": "/categories/bakery-biscuits.png",
-  "Chicken, Meat & Fish": "/categories/chicken-meat-fish.png",
-  "Personal Care": "/categories/personal-care.png",
-  "Pet Care": "/categories/pet-care.png",
-  "Tea, Coffee & Health Drink": "/categories/tea-coffee.png",
-  "Chocolates & Sweets": "/categories/chocolates-sweets.png",
-  "Breakfast & Instant Food": "/categories/breakfast-instant.png",
-  "Sauces & Spreads": "/categories/sauces-spreads.png",
-  "Masala, Oil & More": "/categories/masala-oil.png",
-  "Baby Care": "/categories/baby-care.png",
-  "Cleaning Essentials": "/categories/cleaning-essentials.png",
-  "Paan Corner": "/categories/paan-corner.png",
-  "Fruits & Vegetables": "/categories/fruits-vegetables.png",
-  "Stationery, Office & School": "/categories/stationery-office-school.png",
-  "Pharma & Wellness": "/categories/pharma-wellness.png",
+  "Atta, Rice & Dal": "/categories/atta-rice-dal.webp",
+  Dairy: "/categories/dairy.webp",
+  "Cold Drinks & Juices": "/categories/cold-drinks-juices.webp",
+  "Snacks & Munchies": "/categories/snacks-munchies.webp",
+  "Bakery & Biscuits": "/categories/bakery-biscuits.webp",
+  "Chicken, Meat & Fish": "/categories/chicken-meat-fish.webp",
+  "Personal Care": "/categories/personal-care.webp",
+  "Pet Care": "/categories/pet-care.webp",
+  "Tea, Coffee & Health Drink": "/categories/tea-coffee.webp",
+  "Chocolates & Sweets": "/categories/chocolates-sweets.webp",
+  "Breakfast & Instant Food": "/categories/breakfast-instant.webp",
+  "Sauces & Spreads": "/categories/sauces-spreads.webp",
+  "Masala, Oil & More": "/categories/masala-oil.webp",
+  "Baby Care": "/categories/baby-care.webp",
+  "Cleaning Essentials": "/categories/cleaning-essentials.webp",
+  "Paan Corner": "/categories/paan-corner.webp",
+  "Fruits & Vegetables": "/categories/fruits-vegetables.webp",
+  "Stationery, Office & School": "/categories/stationery-office-school.webp",
+  "Pharma & Wellness": "/categories/pharma-wellness.webp",
 };
 
 export default function HomeClient() {
+  // HomeContent reads useSearchParams, which bails static prerendering out
+  // to this Suspense fallback. So the fallback IS the server-rendered HTML:
+  // it must contain the above-the-fold layout (category strip, hero, promise
+  // tiles, category grid) or the first paint is a bare skeleton and the LCP
+  // waits for hydration + the catalogue fetch. Same components, same
+  // classes — after hydration HomeContent swaps in without a visual jump.
   return (
-    <Suspense fallback={<ProductGridSkeleton count={10} />}>
+    <Suspense fallback={<HomeStaticShell />}>
       <HomeContent />
     </Suspense>
+  );
+}
+
+function HomeStaticShell() {
+  const settings = useSettings();
+  const noop = () => {};
+  return (
+    <div className="max-w-7xl mx-auto px-4 pb-32">
+      <div className="sticky top-16 z-30 -mx-4 px-4 bg-white border-b border-gray-100">
+        <CategoryBar selected={null} onSelect={noop} />
+      </div>
+      <HeroCarousel />
+      <section className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
+        <PromiseTile icon={<Clock size={16} />} title="Quick" subtitle="delivery" />
+        <PromiseTile icon={<Truck size={16} />} title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
+        <PromiseTile icon={<ShieldCheck size={16} />} title="100%" subtitle="genuine" />
+      </section>
+      <CategoryGrid selected={null} onSelect={noop} categoryThumbs={CATEGORY_COVERS} />
+      <div className="mt-6">
+        <ProductGridSkeleton count={10} />
+      </div>
+    </div>
   );
 }
 
@@ -219,7 +247,7 @@ function HomeContent() {
               &ldquo;{debouncedSearch}&rdquo;
             </span>
             {!loading && (
-              <span className="text-gray-400"> — {products.length} items</span>
+              <span className="text-gray-500"> — {products.length} items</span>
             )}
           </p>
           <button
@@ -248,7 +276,7 @@ function HomeContent() {
               {selectedCategory || "Search Results"}
             </h2>
             {!needsAgeGate && (
-              <span className="text-xs text-gray-400">{viewProducts.length} items</span>
+              <span className="text-xs text-gray-500">{viewProducts.length} items</span>
             )}
           </div>
           {needsAgeGate ? (
@@ -355,7 +383,7 @@ function HomeContent() {
           <section className="mt-8">
             <div className="flex items-baseline justify-between mb-3">
               <h2 className="text-[18px] font-bold text-brown">All products</h2>
-              <span className="text-xs text-gray-400">{shuffledAll.length} items</span>
+              <span className="text-xs text-gray-500">{shuffledAll.length} items</span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {shuffledAll.map((p) => (
@@ -474,7 +502,7 @@ function FeatureBanner() {
           </p>
           <h3 className="text-lg font-bold leading-tight">Spend ₹299, save ₹25</h3>
           <p className="text-xs opacity-90 mt-1">Free delivery on every order above ₹299</p>
-          <span className="mt-3 inline-block bg-white text-saffron text-xs font-bold px-3 py-1.5 rounded-lg">
+          <span className="mt-3 inline-block bg-white text-saffron-deep text-xs font-bold px-3 py-1.5 rounded-lg">
             Browse →
           </span>
         </div>

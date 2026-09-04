@@ -69,6 +69,19 @@ export function HeroCarousel() {
     };
   }, [active]);
 
+  // Re-align to the active slide when the viewport width changes (rotation,
+  // split-screen, browser chrome show/hide). scrollLeft keeps the old pixel
+  // offset otherwise, and the track shows two half slides.
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const onResize = () => {
+      el.scrollTo({ left: active * el.clientWidth, behavior: "instant" });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [active]);
+
   // Reset to first slide if banner list changes (e.g. admin disabled one)
   useEffect(() => {
     if (active >= banners.length) setActive(0);
@@ -86,22 +99,30 @@ export function HeroCarousel() {
         ref={trackRef}
         className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide rounded-2xl"
       >
-        {banners.map((b) => (
-          <Slide key={b.id} banner={b} />
+        {banners.map((b, i) => (
+          <Slide key={b.id} banner={b} eager={i === 0} />
         ))}
       </div>
 
       {banners.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex">
           {banners.map((_, i) => (
+            // 24×24 minimum tap target (WCAG 2.5.8 / Lighthouse target-size);
+            // the visible dot inside stays small.
             <button
               key={i}
+              type="button"
               onClick={() => setActive(i)}
               aria-label={`Slide ${i + 1}`}
-              className={`h-1.5 rounded-full transition-all ${
-                i === active ? "w-6 bg-white" : "w-1.5 bg-white/50 hover:bg-white/70"
-              }`}
-            />
+              aria-current={i === active ? "true" : undefined}
+              className="flex h-6 min-w-6 items-center justify-center px-0.5"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-all ${
+                  i === active ? "w-6 bg-white" : "w-1.5 bg-white/50 hover:bg-white/70"
+                }`}
+              />
+            </button>
           ))}
         </div>
       )}
@@ -109,7 +130,7 @@ export function HeroCarousel() {
   );
 }
 
-function Slide({ banner }: { banner: Banner }) {
+function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
   return (
     <Link
       href={banner.ctaHref}
@@ -138,6 +159,11 @@ function Slide({ banner }: { banner: Banner }) {
               alt=""
               width={220}
               height={220}
+              // First slide is above the fold and usually the LCP element, so
+              // don't lazy-load it. Deliberately NOT `priority`: the carousel
+              // renders client-side from the banner store, so a <link preload>
+              // just competes with the JS that has to run before it can paint.
+              loading={eager ? "eager" : "lazy"}
               className="w-24 sm:w-36 md:w-48 h-auto object-contain drop-shadow-xl select-none"
             />
           ) : (

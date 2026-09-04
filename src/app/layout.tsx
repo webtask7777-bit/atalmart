@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PWAProvider } from "@/components/pwa-provider";
+import { APP_NAME, STORE_LOCATION, SUPPORT_PHONE, SUPPORT_EMAIL } from "@/lib/constants";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,8 +21,8 @@ export const viewport: Viewport = {
   themeColor: "#FF6B00",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Pinch-zoom stays enabled (WCAG 1.4.4). iOS's focus-zoom on small inputs
+  // is handled in globals.css by keeping inputs ≥16px on phones instead.
 };
 
 export const metadata: Metadata = {
@@ -53,7 +54,15 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_IN",
+    url: "/",
     siteName: "Atalmart",
+    title: "Atalmart — Atal Nagar ki Atal Delivery",
+    description:
+      "Quick grocery delivery in Naya Raipur. Groceries, dairy, snacks aur daily essentials.",
+    // og:image comes from app/opengraph-image.tsx (file convention).
+  },
+  twitter: {
+    card: "summary_large_image",
     title: "Atalmart — Atal Nagar ki Atal Delivery",
     description:
       "Quick grocery delivery in Naya Raipur. Groceries, dairy, snacks aur daily essentials.",
@@ -69,6 +78,61 @@ export const metadata: Metadata = {
   },
 };
 
+// Organization + WebSite (sitelinks search box) + GroceryStore schema for the
+// whole site. Product pages add their own Product node.
+const SITE_JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://atalmart.com/#org",
+      name: APP_NAME,
+      url: "https://atalmart.com/",
+      logo: "https://atalmart.com/icons/icon-512.png",
+      email: SUPPORT_EMAIL,
+      telephone: `+91${SUPPORT_PHONE}`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://atalmart.com/#website",
+      url: "https://atalmart.com/",
+      name: APP_NAME,
+      publisher: { "@id": "https://atalmart.com/#org" },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://atalmart.com/?search={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "GroceryStore",
+      "@id": "https://atalmart.com/#store",
+      name: APP_NAME,
+      url: "https://atalmart.com/",
+      telephone: `+91${SUPPORT_PHONE}`,
+      priceRange: "₹",
+      image: "https://atalmart.com/icons/icon-512.png",
+      address: {
+        "@type": "PostalAddress",
+        streetAddress: "Sector 28, Nawagaon Parsatti",
+        addressLocality: "Atal Nagar-Nava Raipur",
+        addressRegion: "Chhattisgarh",
+        postalCode: "492018",
+        addressCountry: "IN",
+      },
+      geo: {
+        "@type": "GeoCoordinates",
+        latitude: STORE_LOCATION.lat,
+        longitude: STORE_LOCATION.lng,
+      },
+      areaServed: ["492101", "492014", "492015", "492018", "492030"].map(
+        (postalCode) => ({ "@type": "PostalAddress", postalCode, addressCountry: "IN" }),
+      ),
+      parentOrganization: { "@id": "https://atalmart.com/#org" },
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -76,11 +140,17 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="en-IN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white text-brown" suppressHydrationWarning>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(SITE_JSON_LD).replace(/</g, "\\u003c"),
+          }}
+        />
         {children}
         <PWAProvider />
         <Toaster

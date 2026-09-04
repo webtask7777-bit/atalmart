@@ -90,7 +90,7 @@ export default function OrdersPage() {
                     {formatDate(order.placed_at)}
                   </p>
                 </div>
-                <ChevronRight size={18} className="text-gray-400 shrink-0" />
+                <ChevronRight size={18} className="text-gray-500 shrink-0" />
               </Link>
               <a
                 href={`/invoice/${order.id}`}
@@ -98,7 +98,7 @@ export default function OrdersPage() {
                 rel="noopener"
                 title="View invoice"
                 aria-label="View invoice"
-                className="border-l border-gray-100 px-3 flex items-center justify-center text-gray-400 hover:text-saffron hover:bg-saffron-light/30 transition-colors"
+                className="border-l border-gray-100 px-3 flex items-center justify-center text-gray-500 hover:text-saffron hover:bg-saffron-light/30 transition-colors"
               >
                 <FileText size={16} />
               </a>

@@ -10,7 +10,7 @@
   "background_color": "#FFFFFF",
   "theme_color": "#FF6B00",
   "orientation": "portrait-primary",
-  "lang": "hi-IN",
+  "lang": "en-IN",
   "dir": "ltr",
   "categories": ["food", "shopping", "lifestyle"],
   "prefer_related_applications": false,

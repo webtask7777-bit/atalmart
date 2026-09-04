@@ -50,7 +50,7 @@ export default function ContactPage() {
                 <c.icon size={18} className="text-saffron" />
               </div>
               <div>
-                <div className="text-[11px] text-gray-400 uppercase tracking-wide">
+                <div className="text-[11px] text-gray-500 uppercase tracking-wide">
                   {c.label}
                 </div>
                 <div className="text-sm font-medium text-brown mt-0.5">

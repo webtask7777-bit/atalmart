@@ -45,7 +45,7 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="relative w-full aspect-[1600/912] bg-brown overflow-hidden">
         <Image
-          src="/about/hero-rider.jpg"
+          src="/about/hero-rider.webp"
           alt="Atalmart delivery rider on an electric scooter in Naya Raipur"
           fill
           priority

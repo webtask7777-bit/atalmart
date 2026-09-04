@@ -93,7 +93,7 @@ export function Header({ onSearch }: HeaderProps) {
               <p className="text-[13px] font-semibold text-brown truncate max-w-[160px]">
                 {pincodeLabel}
                 {userPincode && !deliveryEta && (
-                  <span className="ml-1 font-mono text-[10px] text-gray-400">
+                  <span className="ml-1 font-mono text-[10px] text-gray-500">
                     · {userPincode}
                   </span>
                 )}
@@ -104,7 +104,7 @@ export function Header({ onSearch }: HeaderProps) {
                 </p>
               )}
             </div>
-            <ChevronDown size={14} className="text-gray-400 group-hover:text-saffron transition-colors" />
+            <ChevronDown size={14} className="text-gray-500 group-hover:text-saffron transition-colors" />
           </button>
 
           {/* Search */}
@@ -112,14 +112,14 @@ export function Header({ onSearch }: HeaderProps) {
             <div className="relative w-full">
               <Search
                 size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
               />
               <input
                 type="text"
                 placeholder='Search "milk", "atta", "Maggi"...'
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-[14px] placeholder:text-gray-400 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
+                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-[14px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
               />
             </div>
           </form>
@@ -146,7 +146,7 @@ export function Header({ onSearch }: HeaderProps) {
                   </span>
                 )}
               </span>
-              <ChevronDown size={10} className="text-gray-400 shrink-0" />
+              <ChevronDown size={10} className="text-gray-500 shrink-0" />
             </button>
             <Link
               href="/auth"
@@ -189,14 +189,14 @@ export function Header({ onSearch }: HeaderProps) {
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
               />
               <input
                 type="text"
                 placeholder='Search "milk", "atta", "Maggi"...'
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-400 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
+                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
               />
             </div>
           </form>

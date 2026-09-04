@@ -19,6 +19,38 @@ export const STORE_LOCATION = {
   address: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
 };
 
+/**
+ * Direct-UPI payment (owner's VPA). Customers pay this ID from any UPI app
+ * and submit the 12-digit UTR at checkout; admin verifies manually against
+ * the bank statement before dispatch. Independent of Razorpay.
+ */
+export const UPI_ID = "7777066666@hdfc";
+export const UPI_PAYEE_NAME = "Atalmart";
+
+/** Customer support contact — the only phone/email shown anywhere. */
+export const SUPPORT_PHONE = "7777066666";
+export const SUPPORT_EMAIL = "webtask7777@gmail.com";
+
+/**
+ * Regulatory IDs shown in the footer / legal pages. Leave `null` until the
+ * real number is issued — a null renders NOTHING (never a placeholder).
+ * FSSAI: 14-digit food business licence. GSTIN: 15-character GST number.
+ */
+export const FSSAI_LICENSE: string | null = null;
+export const GSTIN: string | null = null;
+
+/** Standard UPI deep link (NPCI spec) — opens GPay/PhonePe/Paytm chooser on mobile. */
+export function buildUpiIntentUrl(amount: number, note = "Atalmart order") {
+  const params = new URLSearchParams({
+    pa: UPI_ID,
+    pn: UPI_PAYEE_NAME,
+    am: String(amount),
+    cu: "INR",
+    tn: note,
+  });
+  return `upi://pay?${params.toString()}`;
+}
+
 /** Friendly area label for each serviceable pincode (used in confirmation UI). */
 export const PINCODE_AREA_LABELS: Record<string, string> = {
   "492101": "Sector 21–29, Atal Nagar",

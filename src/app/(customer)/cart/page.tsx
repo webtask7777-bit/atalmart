@@ -105,7 +105,7 @@ export default function CartPage() {
                 <p className="text-sm font-bold text-brown mt-0.5">
                   ₹{unitPrice * quantity}
                   {unitMrp > unitPrice && (
-                    <span className="text-xs text-gray-400 line-through ml-2 font-normal">
+                    <span className="text-xs text-gray-500 line-through ml-2 font-normal">
                       ₹{unitMrp * quantity}
                     </span>
                   )}
@@ -138,7 +138,7 @@ export default function CartPage() {
                 </div>
                 <button
                   onClick={() => removeItem(product.id, variantId)}
-                  className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  className="p-1.5 text-gray-500 hover:text-red-500 transition-colors"
                   aria-label="remove"
                 >
                   <Trash2 size={16} />

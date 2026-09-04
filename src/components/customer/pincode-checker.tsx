@@ -140,7 +140,7 @@ export function PincodeCheckerForm({
   // Geolocate → /api/geo/contains → fill the pincode field with the matched
   // (or nearest) sector's pincode. Errors surface inline, never a toast — the
   // user can always type a pincode manually.
-  const useMyLocation = async (opts?: { silent?: boolean }) => {
+  const locateMe = async (opts?: { silent?: boolean }) => {
     const silent = opts?.silent === true;
     if (!silent) setGeoError(null);
 
@@ -215,9 +215,12 @@ export function PincodeCheckerForm({
     }
   };
 
-  // Auto-attempt geolocation when the modal first opens AND no pincode is
-  // typed yet. Permissions API gate so a previously denied user doesn't
-  // re-trigger the silent flow.
+  // Auto-fill from geolocation when the modal first opens AND no pincode is
+  // typed yet — but ONLY if the browser already has permission. Prompting for
+  // location on page load (before the user tapped anything) is penalised by
+  // Chrome/Lighthouse and most people deny a cold prompt, which then blocks
+  // the "Use my current location" button too. First-time users tap the
+  // button; the prompt is tied to that gesture.
   useEffect(() => {
     if (autoTriedRef.current || input) return;
     autoTriedRef.current = true;
@@ -227,18 +230,15 @@ export function PincodeCheckerForm({
       };
     };
     const perms = (navigator as PermNavigator).permissions;
-    const fire = () => useMyLocation({ silent: true });
-    if (!perms || typeof perms.query !== "function") {
-      fire();
-      return;
-    }
+    if (!perms || typeof perms.query !== "function") return;
     perms
       .query({ name: "geolocation" as PermissionName })
       .then((status) => {
-        if (status.state === "denied") return;
-        fire();
+        if (status.state === "granted") locateMe({ silent: true });
       })
-      .catch(() => fire());
+      .catch(() => {
+        /* no Permissions API → wait for the button */
+      });
     // We only ever run this once per mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -262,7 +262,7 @@ export function PincodeCheckerForm({
       <div className="relative">
         <Search
           size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
         />
         <input
           type="text"
@@ -289,9 +289,9 @@ export function PincodeCheckerForm({
       {/* Use my location — auto-fills the pincode from device geolocation */}
       <button
         type="button"
-        onClick={() => useMyLocation()}
+        onClick={() => locateMe()}
         disabled={locating}
-        className="mt-2 w-full flex items-center justify-center gap-2 py-2 border-2 border-saffron/30 bg-saffron-light text-saffron font-semibold text-sm rounded-xl hover:bg-orange-100 disabled:opacity-60 transition-colors"
+        className="mt-2 w-full flex items-center justify-center gap-2 py-2 border-2 border-saffron/30 bg-saffron-light text-saffron-deep font-semibold text-sm rounded-xl hover:bg-orange-100 disabled:opacity-60 transition-colors"
       >
         {locating ? (
           <>
@@ -365,7 +365,7 @@ export function PincodeCheckerForm({
       )}
 
       {/* Serviceable pincodes hint */}
-      <p className="text-[11px] text-gray-400 mt-3 leading-relaxed text-center">
+      <p className="text-[11px] text-gray-500 mt-3 leading-relaxed text-center">
         We currently serve pincodes:{" "}
         <span className="font-mono text-brown">
           {serviceableList.join(", ")}
@@ -402,7 +402,7 @@ export function PincodeBadge() {
         className={serviceable ? "text-saffron" : "text-red-500"}
       />
       <div className="min-w-0">
-        <p className="text-[9px] uppercase tracking-wider text-gray-400 leading-none">
+        <p className="text-[9px] uppercase tracking-wider text-gray-500 leading-none">
           {pincode ? "Deliver to" : "Set pincode"}
         </p>
         <p className="text-xs font-semibold text-brown truncate leading-tight mt-0.5">
