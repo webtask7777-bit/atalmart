@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, ShoppingCart, User, Search, ChevronDown } from "lucide-react";
@@ -23,7 +23,17 @@ interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
+// Rotating search hints — the placeholder cycles so first-time visitors see
+// what they can type without a "trending" panel.
+const SEARCH_HINTS = ['Search "milk"', 'Search "atta"', 'Search "Maggi"', 'Search "eggs"', 'Search "oil"', 'Search "chips"'];
+
 export function Header({ onSearch }: HeaderProps) {
+  const [hintIdx, setHintIdx] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setHintIdx((i) => (i + 1) % SEARCH_HINTS.length), 2600);
+    return () => clearInterval(id);
+  }, []);
+  const searchHint = SEARCH_HINTS[hintIdx];
   const itemCount = useCartStore((s) => s.getItemCount());
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -116,7 +126,7 @@ export function Header({ onSearch }: HeaderProps) {
               />
               <input
                 type="text"
-                placeholder='Search "milk", "atta", "Maggi"...'
+                placeholder={searchHint}
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-[14px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
@@ -137,12 +147,18 @@ export function Header({ onSearch }: HeaderProps) {
                 className={`${pincodeOk ? "text-saffron" : "text-red-500"} shrink-0`}
               />
               <span className="min-w-0 leading-tight">
-                <span className="block text-[11px] font-semibold text-brown truncate">
-                  {pincodeLabel}
-                </span>
-                {deliveryEta && (
-                  <span className="block text-[10px] font-semibold text-indian-green leading-none">
-                    {formatEta(deliveryEta)}
+                {deliveryEta ? (
+                  <>
+                    <span className="block text-[12px] font-extrabold text-indian-green leading-none">
+                      ⚡ {formatEta(deliveryEta)}
+                    </span>
+                    <span className="block text-[10px] font-medium text-gray-600 truncate mt-0.5">
+                      {pincodeLabel}
+                    </span>
+                  </>
+                ) : (
+                  <span className="block text-[11px] font-semibold text-brown truncate">
+                    {pincodeLabel}
                   </span>
                 )}
               </span>
@@ -193,7 +209,7 @@ export function Header({ onSearch }: HeaderProps) {
               />
               <input
                 type="text"
-                placeholder='Search "milk", "atta", "Maggi"...'
+                placeholder={searchHint}
                 value={searchInput}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors"

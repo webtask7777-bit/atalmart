@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect, Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Clock, ShieldCheck, Truck } from "lucide-react";
+import { Clock, ShieldCheck, Truck, Search, ChevronDown } from "lucide-react";
 import { ProductCard } from "@/components/customer/product-card";
 import { CategoryBar } from "@/components/customer/category-bar";
 import { CategoryGrid } from "@/components/customer/category-grid";
@@ -18,6 +19,8 @@ import { ProductRail } from "@/components/customer/product-rail";
 import { CartBar } from "@/components/customer/cart-bar";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { useProducts, useCategories } from "@/lib/hooks/use-products";
+import { useOrders } from "@/lib/hooks/use-orders";
+import { useAuth } from "@/lib/hooks/use-auth";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useSettings } from "@/lib/store/settings";
 import { shuffleForGrid, hashId } from "@/lib/product-order";
@@ -74,6 +77,12 @@ const CATEGORY_COVERS: Record<string, string> = {
   "Pharma & Wellness": "/categories/pharma-wellness.webp",
 };
 
+// Chips under the search bar — the things people actually type first.
+const QUICK_SEARCHES = ["Milk", "Atta", "Maggi", "Eggs", "Bread", "Oil", "Rice", "Dahi"];
+
+/** "All products" renders in pages so the DOM (and image count) stays sane. */
+const GRID_PAGE = 30;
+
 export default function HomeClient() {
   // HomeContent reads useSearchParams, which bails static prerendering out
   // to this Suspense fallback. So the fallback IS the server-rendered HTML:
@@ -96,6 +105,7 @@ function HomeStaticShell() {
       <div className="sticky top-16 z-30 -mx-4 px-4 bg-white border-b border-gray-100">
         <CategoryBar selected={null} onSelect={noop} />
       </div>
+      <QuickSearches />
       <HeroCarousel />
       <section className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
         <PromiseTile icon={<Clock size={16} />} title="Quick" subtitle="delivery" />
@@ -144,6 +154,35 @@ function HomeContent() {
     search: debouncedSearch || undefined,
   });
   const { categories } = useCategories();
+
+  // ── Buy again: products from this customer's past orders ──
+  const { user } = useAuth();
+  const { orders: myOrders } = useOrders();
+  const buyAgain = useMemo(() => {
+    if (!user || myOrders.length === 0 || products.length === 0) return [] as Product[];
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const seen = new Set<string>();
+    const out: Product[] = [];
+    for (const o of myOrders) {
+      if (o.status === "cancelled") continue;
+      for (const it of o.items ?? []) {
+        const p = byId.get(it.product_id);
+        if (!p || seen.has(p.id) || p.stock <= 0) continue;
+        seen.add(p.id);
+        out.push(p);
+        if (out.length >= 12) return out;
+      }
+    }
+    return out;
+  }, [user, myOrders, products]);
+
+  // ── Grid pagination ── keyed by the current view so switching category or
+  // search naturally starts at the first page (no reset effect needed).
+  const gridKey = `${selectedCategory ?? ""}|${debouncedSearch}`;
+  const [gridLimits, setGridLimits] = useState<Record<string, number>>({});
+  const gridLimit = gridLimits[gridKey] ?? GRID_PAGE;
+  const setGridLimit = (fn: (n: number) => number) =>
+    setGridLimits((m) => ({ ...m, [gridKey]: fn(m[gridKey] ?? GRID_PAGE) }));
 
   // ── Curated collections (computed from product data) ──
   const rails = useMemo(
@@ -220,6 +259,8 @@ function HomeContent() {
         <CategoryBar selected={selectedCategory} onSelect={setSelectedCategory} />
       </div>
 
+      {!isFiltered && <QuickSearches />}
+
       {/* Hero carousel — only when not filtering */}
       {!isFiltered && <HeroCarousel />}
 
@@ -293,11 +334,28 @@ function HomeContent() {
                 />
               )}
               {viewProducts.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                  {viewProducts.map((p) => (
-                    <ProductCard key={p.id} product={p} />
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {viewProducts.slice(0, gridLimit).map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                  {gridLimit < viewProducts.length && (
+                    <div className="mt-5 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => setGridLimit((n) => n + GRID_PAGE * 2)}
+                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-saffron/40 bg-white text-saffron-deep font-bold text-sm hover:bg-saffron-light hover:border-saffron transition-colors"
+                      >
+                        Show more
+                        <ChevronDown size={16} />
+                        <span className="text-xs font-semibold text-gray-500">
+                          ({viewProducts.length - gridLimit} more)
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
                 <EmptyState search={debouncedSearch} />
               )}
@@ -307,6 +365,18 @@ function HomeContent() {
       ) : (
         // Modern home view: rails + grid
         <>
+          {buyAgain.length > 0 && (
+            <ProductRail
+              title="Buy again"
+              subtitle="Aapke pichhle orders se"
+              emoji="🔁"
+              products={buyAgain}
+              seeAllHref="/orders"
+              seeAllLabel="My orders"
+              accent="green"
+            />
+          )}
+
           {rails.topDeals.length > 0 && (
             <ProductRail
               title="Top deals today"
@@ -333,6 +403,8 @@ function HomeContent() {
               subtitle="Chai pe charcha ke saath"
               emoji="🍿"
               products={rails.snacks}
+              onSeeAll={() => setSelectedCategory("Snacks & Munchies")}
+              seeAllLabel="All snacks"
               accent="purple"
             />
           )}
@@ -343,6 +415,8 @@ function HomeContent() {
               subtitle="Fresh from the farm"
               emoji="🥛"
               products={rails.dairy}
+              onSeeAll={() => setSelectedCategory("Dairy")}
+              seeAllLabel="All dairy"
               accent="blue"
             />
           )}
@@ -355,6 +429,8 @@ function HomeContent() {
               subtitle="Chai, coffee, juices — sab kuch"
               emoji="🥤"
               products={rails.beverages}
+              onSeeAll={() => setSelectedCategory("Cold Drinks & Juices")}
+              seeAllLabel="All drinks"
               accent="saffron"
             />
           )}
@@ -365,6 +441,8 @@ function HomeContent() {
               subtitle="Meetha kuch ho jaaye"
               emoji="🍫"
               products={rails.sweet}
+              onSeeAll={() => setSelectedCategory("Chocolates & Sweets")}
+              seeAllLabel="All sweets"
               accent="purple"
             />
           )}
@@ -375,21 +453,45 @@ function HomeContent() {
               subtitle="Roz ki self-care"
               emoji="🧴"
               products={rails.personalCare}
+              onSeeAll={() => setSelectedCategory("Personal Care")}
+              seeAllLabel="All personal care"
               accent="green"
             />
           )}
 
           {/* All products grid at bottom — grouped by category, in-stock first */}
           <section className="mt-8">
-            <div className="flex items-baseline justify-between mb-3">
-              <h2 className="text-[18px] font-bold text-brown">All products</h2>
-              <span className="text-xs text-gray-500">{shuffledAll.length} items</span>
+            <div className="flex items-end justify-between mb-3">
+              <div>
+                <h2 className="text-[18px] font-bold text-brown leading-tight flex items-center gap-2">
+                  <span className="text-2xl">🧺</span>
+                  All products
+                </h2>
+                <p className="text-xs text-brown-light mt-0.5">
+                  Showing {Math.min(gridLimit, shuffledAll.length)} of {shuffledAll.length}
+                </p>
+              </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {shuffledAll.map((p) => (
+              {shuffledAll.slice(0, gridLimit).map((p) => (
                 <ProductCard key={p.id} product={p} />
               ))}
             </div>
+            {gridLimit < shuffledAll.length && (
+              <div className="mt-5 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setGridLimit((n) => n + GRID_PAGE * 2)}
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-saffron/40 bg-white text-saffron-deep font-bold text-sm hover:bg-saffron-light hover:border-saffron transition-colors"
+                >
+                  Show more
+                  <ChevronDown size={16} />
+                  <span className="text-xs font-semibold text-gray-500">
+                    ({shuffledAll.length - gridLimit} more)
+                  </span>
+                </button>
+              </div>
+            )}
           </section>
         </>
       )}
@@ -400,6 +502,27 @@ function HomeContent() {
 }
 
 // ───────────── Helpers ─────────────
+
+/** One-tap searches under the category strip. Plain links so they work in
+ *  the server-rendered shell too. */
+function QuickSearches() {
+  return (
+    <div className="mt-3 flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
+      <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500">
+        <Search size={12} /> Quick
+      </span>
+      {QUICK_SEARCHES.map((q) => (
+        <Link
+          key={q}
+          href={`/?search=${encodeURIComponent(q.toLowerCase())}`}
+          className="shrink-0 px-3 py-1.5 rounded-full bg-gray-100 text-[12px] font-semibold text-brown hover:bg-saffron-light hover:text-saffron-deep transition-colors"
+        >
+          {q}
+        </Link>
+      ))}
+    </div>
+  );
+}
 
 function buildRails(products: Product[], categories: Category[]) {
   // name → id map, resilient to demo ("1".."20") vs live (UUID) modes.

@@ -12,6 +12,10 @@ interface ProductRailProps {
   emoji?: string;
   products: Product[];
   seeAllHref?: string;
+  /** Client-side "see all" (e.g. select a category on the home page). When
+   *  given, a "See all" tile is appended at the end of the rail too. */
+  onSeeAll?: () => void;
+  seeAllLabel?: string;
   accent?: "saffron" | "green" | "purple" | "blue";
 }
 
@@ -31,6 +35,8 @@ export function ProductRail({
   emoji,
   products,
   seeAllHref,
+  onSeeAll,
+  seeAllLabel = "See all",
   accent = "saffron",
 }: ProductRailProps) {
   const railRef = useRef<HTMLDivElement>(null);
@@ -58,14 +64,22 @@ export function ProductRail({
           </h2>
           {subtitle && <p className="text-xs text-brown-light mt-0.5">{subtitle}</p>}
         </div>
-        {seeAllHref && (
+        {seeAllHref ? (
           <Link
             href={seeAllHref}
-            className="text-xs font-bold text-saffron hover:underline flex items-center gap-0.5"
+            className="text-xs font-bold text-saffron-deep hover:underline flex items-center gap-0.5 shrink-0"
           >
-            See all <ChevronRight size={14} />
+            {seeAllLabel} <ChevronRight size={14} />
           </Link>
-        )}
+        ) : onSeeAll ? (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="text-xs font-bold text-saffron-deep hover:underline flex items-center gap-0.5 shrink-0"
+          >
+            {seeAllLabel} <ChevronRight size={14} />
+          </button>
+        ) : null}
       </div>
 
       {/* Scroll arrows (desktop) */}
@@ -96,6 +110,18 @@ export function ProductRail({
             <ProductCard product={p} />
           </div>
         ))}
+        {onSeeAll && (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="snap-start shrink-0 w-[110px] sm:w-[130px] self-stretch rounded-2xl border-2 border-dashed border-saffron/40 bg-white/70 hover:bg-saffron-light hover:border-saffron flex flex-col items-center justify-center gap-2 text-saffron-deep transition-colors"
+          >
+            <span className="w-10 h-10 rounded-full bg-saffron-light flex items-center justify-center">
+              <ChevronRight size={20} />
+            </span>
+            <span className="text-xs font-bold px-2 text-center leading-tight">{seeAllLabel}</span>
+          </button>
+        )}
       </div>
     </section>
   );

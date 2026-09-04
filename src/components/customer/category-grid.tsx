@@ -19,8 +19,16 @@ export function CategoryGrid({
 }: CategoryGridProps) {
   return (
     <section className="mt-5">
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-[16px] font-bold text-brown">Shop by category</h2>
+      <div className="flex items-end justify-between mb-3">
+        <div>
+          <h2 className="text-[18px] font-bold text-brown leading-tight flex items-center gap-2">
+            <span className="text-2xl">🛍️</span>
+            Shop by category
+          </h2>
+          <p className="text-xs text-brown-light mt-0.5">
+            {CATEGORIES_SEED.length} categories · sab kuch ek jagah
+          </p>
+        </div>
         {selected && (
           <button
             onClick={() => onSelect(null)}
