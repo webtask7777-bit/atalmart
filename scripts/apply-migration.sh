@@ -14,6 +14,11 @@ FILE="${1:?usage: $0 <migration.sql>}"
 PROJECT_REF="${PROJECT_REF:-gnrselkepycedynyxwjr}"
 
 TOKEN="${SUPABASE_ACCESS_TOKEN:-$(security find-generic-password -s "Supabase CLI" -a supabase -w 2>/dev/null || true)}"
+# The CLI's keyring library stores non-ASCII-safe values base64-encoded with a
+# "go-keyring-base64:" prefix — decode it back to the plain sbp_ token.
+case "$TOKEN" in
+  go-keyring-base64:*) TOKEN=$(printf '%s' "${TOKEN#go-keyring-base64:}" | base64 -d) ;;
+esac
 if [ -z "$TOKEN" ]; then
   echo "No Supabase access token. Run: supabase login   (or export SUPABASE_ACCESS_TOKEN)" >&2
   exit 1
