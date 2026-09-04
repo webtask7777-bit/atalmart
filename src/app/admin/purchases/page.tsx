@@ -76,11 +76,12 @@ export default function PurchasesAdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [importSummary, setImportSummary] = useState<{
-    source: "ai" | "sheet";
+    source: "ai" | "sheet" | "pdf";
     total: number;
     matched: number;
     review: number;
     grandTotal: number | null;
+    skipped: string[];
   } | null>(null);
 
   /**
@@ -97,8 +98,9 @@ export default function PurchasesAdminPage() {
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         error?: string;
-        source?: "ai" | "sheet";
+        source?: "ai" | "sheet" | "pdf";
         invoice?: ParsedInvoice;
+        skipped?: string[];
       };
       if (!res.ok || !data.ok || !data.invoice) {
         throw new Error(data.error || `Import failed (${res.status})`);
@@ -136,6 +138,7 @@ export default function PurchasesAdminPage() {
         matched,
         review: imported.length - matched,
         grandTotal: inv.grand_total,
+        skipped: data.skipped ?? [],
       });
       setModalOpen(true);
       toast.success(
@@ -396,7 +399,12 @@ export default function PurchasesAdminPage() {
               <Sparkles size={16} className="mt-0.5 shrink-0 text-saffron" />
               <div>
                 <strong>{importSummary.total} lines</strong> read from the bill
-                {importSummary.source === "ai" ? " (AI)" : " (spreadsheet)"} ·{" "}
+                {importSummary.source === "ai"
+                  ? " (AI)"
+                  : importSummary.source === "pdf"
+                    ? " (PDF text)"
+                    : " (spreadsheet)"}{" "}
+                ·{" "}
                 <strong>{importSummary.matched}</strong> matched to catalogue products
                 {importSummary.review > 0 && (
                   <>
@@ -409,6 +417,18 @@ export default function PurchasesAdminPage() {
                   <> — bill total {formatRupees(importSummary.grandTotal)}, form total {formatRupees(totals.grandTotal)}</>
                 )}
                 .
+                {importSummary.skipped.length > 0 && (
+                  <details className="mt-1 text-xs text-gray-600">
+                    <summary className="cursor-pointer">
+                      {importSummary.skipped.length} row{importSummary.skipped.length > 1 ? "s" : ""} couldn&apos;t be read — add manually
+                    </summary>
+                    <ul className="list-disc pl-4 mt-1 space-y-0.5">
+                      {importSummary.skipped.slice(0, 8).map((t, i) => (
+                        <li key={i} className="font-mono">{t}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
               </div>
             </div>
           )}

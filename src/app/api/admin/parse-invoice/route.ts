@@ -3,6 +3,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import ExcelJS from "exceljs";
 import { requireRole } from "@/lib/supabase/auth-guard";
 import { resolveAnthropicKey } from "@/lib/server/secrets";
+import { extractPdfRows } from "@/lib/server/pdf-text";
+import { parseInvoiceRows } from "@/lib/server/invoice-text-parse";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -11,10 +13,15 @@ export const maxDuration = 120;
  * POST /api/admin/parse-invoice — turn a wholesale invoice into draft PO lines.
  *
  * multipart/form-data with `file`:
- *   • PDF / JPG / PNG / WebP  → Claude reads the bill (structured output)
+ *   • PDF                     → text extracted with pdf.js and parsed locally
+ *                               (no AI, no key). Scanned PDFs with no text
+ *                               fall back to Claude when a key is configured.
  *   • XLSX / CSV              → column-mapped parse, no AI needed
+ *   • JPG / PNG / WebP photo  → Claude only (needs ANTHROPIC_API_KEY); without
+ *                               a key the admin is told to upload PDF/Excel.
  *
- * Returns { ok, source: "ai" | "sheet", invoice: ParsedInvoice }. The client
+ * Returns { ok, source: "pdf" | "ai" | "sheet", invoice: ParsedInvoice,
+ * skipped?: string[] }. The client
  * matches each line to the catalogue and prefills the "New invoice" form —
  * nothing is written to the database here, the admin still reviews & saves.
  */
@@ -353,6 +360,8 @@ export async function POST(req: NextRequest) {
   const isAiReadable =
     file.type === "application/pdf" || /\.pdf$/.test(name) || IMAGE_TYPES.has(file.type);
 
+  const isPdf = file.type === "application/pdf" || /\.pdf$/.test(name);
+
   try {
     if (isSheet) {
       const rows = await rowsFromFile(file);
@@ -365,13 +374,47 @@ export async function POST(req: NextRequest) {
         { status: 415 },
       );
     }
+
     const key = resolveAnthropicKey();
+
+    // PDF: local text parse first — free, instant, works offline from AI.
+    if (isPdf) {
+      const data = new Uint8Array(await file.arrayBuffer());
+      let textRows: Awaited<ReturnType<typeof extractPdfRows>> = [];
+      try {
+        textRows = await extractPdfRows(data);
+      } catch {
+        textRows = [];
+      }
+      const hasText = textRows.some((r) => r.text.length > 3);
+      if (hasText) {
+        const parsed = parseInvoiceRows(textRows);
+        if (parsed.lines.length > 0) {
+          const { skipped, ...rest } = parsed;
+          const invoice = cleanInvoice(rest);
+          return NextResponse.json({ ok: true, source: "pdf", invoice, skipped });
+        }
+      }
+      if (!key.value) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: hasText
+              ? "Couldn't find product rows in this PDF's text. Upload the Excel/CSV export of the bill instead (Flipkart Wholesale → Orders → Download invoice/Excel)."
+              : "This PDF has no readable text (it's a scan). Upload the Excel/CSV export, or the original text PDF from Flipkart Wholesale.",
+          },
+          { status: 422 },
+        );
+      }
+      // Scanned or oddly laid-out PDF and a key exists → let the model read it.
+    }
+
     if (!key.value) {
       return NextResponse.json(
         {
           ok: false,
           error:
-            "AI invoice reading isn't configured (ANTHROPIC_API_KEY missing on the server). Upload the Excel/CSV export instead, or add the key in Vercel env.",
+            "Photo reading needs the AI key, which isn't configured. Upload the bill as PDF or Excel/CSV instead — those work without it.",
         },
         { status: 503 },
       );

@@ -86,6 +86,9 @@ const nextConfig: NextConfig = {
   // (build warning + wrong file tracing). Pin it to this project.
   turbopack: { root: __dirname },
   outputFileTracingRoot: __dirname,
+  // pdf.js loads its worker/fonts relative to its own package files; bundling
+  // it breaks that. Keep it as a runtime require from node_modules.
+  serverExternalPackages: ["pdfjs-dist"],
 
   // Security headers applied to every response
   async headers() {
