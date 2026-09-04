@@ -24,7 +24,7 @@ const CARDS = [
   {
     icon: MapPin,
     label: "Address",
-    value: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
+    value: "Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101",
   },
 ];
 

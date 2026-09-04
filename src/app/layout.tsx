@@ -114,10 +114,10 @@ const SITE_JSON_LD = {
       image: "https://atalmart.com/icons/icon-512.png",
       address: {
         "@type": "PostalAddress",
-        streetAddress: "Sector 28, Nawagaon Parsatti",
+        streetAddress: "Sector 27",
         addressLocality: "Atal Nagar-Nava Raipur",
         addressRegion: "Chhattisgarh",
-        postalCode: "492018",
+        postalCode: "492101",
         addressCountry: "IN",
       },
       geo: {

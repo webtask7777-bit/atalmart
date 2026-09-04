@@ -32,6 +32,7 @@ export function Footer() {
         {/* Company / legal links */}
         <div className="flex flex-wrap gap-x-4 gap-y-1.5 border-t border-gray-700 pt-4">
           {[
+            ["Delivery areas", "/delivery"],
             ["About", "/about"],
             ["Contact", "/contact"],
             ["FAQs", "/faq"],
@@ -114,6 +115,11 @@ export function Footer() {
                   Coverage map
                 </Link>
               </li>
+              <li>
+                <Link href="/delivery" className="hover:text-saffron transition-colors">
+                  Delivery areas (sector-wise)
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -156,7 +162,7 @@ export function Footer() {
         </div>
 
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-xs text-gray-400">
-          Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018 ·{" "}
+          Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101 ·{" "}
           <span className="text-saffron">{SUPPORT_EMAIL}</span>
           <br className="sm:hidden" />
           <span className="hidden sm:inline"> · </span>

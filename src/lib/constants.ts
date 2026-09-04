@@ -8,15 +8,15 @@ export const DELIVERY_FEE = 25;
 export const FREE_DELIVERY_ABOVE = 299;
 
 /**
- * Atalmart dark store (10-min delivery hub). All rider routing, ETA, and
- * service-area distance calculations originate here. Plot currently empty —
- * warehouse construction scheduled at this exact lat/lng. Update only if the
- * warehouse moves.
+ * Atalmart dark store (quick-delivery hub) in Sector 27, Atal Nagar. All
+ * rider routing, ETA and service-area distance calculations originate here.
+ * lat/lng is the owner-confirmed plot (sits on the Sector 27/28 boundary of
+ * the coarse OSM sector boxes). Update only if the warehouse moves.
  */
 export const STORE_LOCATION = {
   lat: 21.141127812971583,
   lng: 81.78011102244383,
-  address: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
+  address: "Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101",
 };
 
 /**

@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listPublicProductIds } from "@/lib/server/public-product";
+import { ACTIVE_SECTOR_AREAS } from "@/lib/sectors-data";
 
 const BASE = "https://atalmart.com";
 
@@ -12,6 +13,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const statics: MetadataRoute.Sitemap = [
     { url: `${BASE}/`, changeFrequency: "daily", priority: 1 },
     { url: `${BASE}/service-area`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE}/delivery`, changeFrequency: "monthly", priority: 0.8 },
+    ...ACTIVE_SECTOR_AREAS.map((s) => ({
+      url: `${BASE}/delivery/${s.slug}`,
+      changeFrequency: "monthly" as const,
+      priority: 0.7,
+    })),
     { url: `${BASE}/about`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/contact`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${BASE}/faq`, changeFrequency: "monthly", priority: 0.6 },

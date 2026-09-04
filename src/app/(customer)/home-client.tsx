@@ -125,7 +125,13 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const urlSearch = searchParams.get("search") || "";
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  // ?category=<name> deep-links straight into a category (used by the
+  // /delivery/<sector> landing pages). Only seeds the initial state — the
+  // strip/grid keep owning it afterwards.
+  const urlCategory = searchParams.get("category");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
+    urlCategory && CATEGORIES_SEED.some((c) => c.name === urlCategory) ? urlCategory : null,
+  );
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   // Reset the subcategory whenever the parent category changes (or clears).
   useEffect(() => {

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/supabase/helpers";
 
@@ -48,7 +49,7 @@ export type SiteSettings = {
 const DEFAULTS: SiteSettings = {
   appName: "Atalmart",
   tagline: "Atal Nagar ki Atal Delivery",
-  storeAddress: "Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018",
+  storeAddress: "Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101",
   contactEmail: "webtask7777@gmail.com",
   contactPhone: "+91 7777066666", // Vivek's real support number (confirmed 2026-07-21)
   deliveryFee: 25,
@@ -181,6 +182,13 @@ export const useSettingsStore = create<SettingsStore>()(
         ).then(({ error }) => {
           if (error && typeof window !== "undefined") {
             console.warn("[settings] save failed", error);
+            // The admin just saw "Settings saved" from the page's optimistic
+            // toast, but checkout reads the DB row — if this write failed the
+            // store keeps charging the OLD delivery fee / min order / status.
+            // Surface it loudly instead of only console.warn.
+            toast.error(
+              "Settings did NOT reach the database — checkout still uses the old values. Retry.",
+            );
           }
         });
       },

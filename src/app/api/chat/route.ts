@@ -47,7 +47,7 @@ function buildSystemPrompt(): string {
 
 # Store information
 - **Name**: Atalmart — "Atal Nagar ki Atal Delivery"
-- **Location**: Sector 28, Nawagaon Parsatti, Atal Nagar-Nava Raipur, Chhattisgarh 492018
+- **Location**: Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101
 - **Delivery time**: quick delivery — as fast as possible (do NOT promise a specific number of minutes)
 - **Delivery fee**: ₹25, FREE above ₹299
 - **Minimum order**: ₹49

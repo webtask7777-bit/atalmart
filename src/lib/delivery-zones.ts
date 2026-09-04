@@ -1,35 +1,22 @@
 /**
- * Zone-based delivery-time estimate, shown ONLY on the header "DELIVER TO"
- * location chip once the customer has set a precise sector. Base store =
- * Sector 29. The customer's resolved sector arrives as the `area` label on
- * useUserPincodeStore (e.g. "Sector 24, Atal Nagar"); we parse the number out
- * and map it to a zone bracket.
+ * Delivery-time estimate for a resolved area label, shown on the header
+ * "DELIVER TO" chip once the customer has a precise sector. ETAs come from
+ * the generated service-area data (src/lib/sectors-data.ts): straight-line
+ * distance from the Sector 27 dark store, bucketed into zones. Regenerate
+ * that file (scripts/generate-sectors-seed.mjs) when the store moves or a
+ * sector is added — nothing here needs editing.
  *
  * Deliberately NOT shown on the home promise-strip or checkout (owner wanted
  * minutes only at the location chip). Flip DELIVERY_ETA_ENABLED to hide it.
  */
 
+import { SECTOR_AREAS, findSectorArea, type Eta } from "@/lib/sectors-data";
+
+export type { Eta };
+
 export const DELIVERY_ETA_ENABLED = true;
 
-export interface Eta {
-  min: number;
-  max: number;
-  zone: string;
-}
-
-interface Zone {
-  name: string;
-  sectors: number[];
-  min: number;
-  max: number;
-}
-
-export const ZONES: Zone[] = [
-  { name: "Immediate", sectors: [29, 27], min: 15, max: 20 },
-  { name: "Medium", sectors: [28, 26, 25, 24, 23, 22, 21, 19], min: 25, max: 30 },
-];
-
-/** Resolved-but-far / out-of-list locations (e.g. IIIT, HNLU, IIM, Jungle Safari). */
+/** Resolved-but-far / out-of-list locations (e.g. Jungle Safari, IIM). */
 export const OUTER_ETA: Eta = { min: 35, max: 45, zone: "Outer" };
 
 /** Pull the sector number out of an area label like "Sector 24, Atal Nagar". */
@@ -40,15 +27,19 @@ export function sectorNumberFromArea(area: string | null | undefined): number | 
 }
 
 /**
- * ETA for a resolved area label. Returns null when the sector can't be
- * determined (bare pincode / no location) so the chip just shows the label.
+ * ETA for a resolved area label. Returns null when the area can't be matched
+ * to a known sector/landmark (bare pincode / no location) so the chip just
+ * shows the label.
  */
 export function etaForArea(area: string | null | undefined): Eta | null {
-  const sector = sectorNumberFromArea(area);
-  if (sector == null) return null;
-  const zone = ZONES.find((z) => z.sectors.includes(sector));
-  if (zone) return { min: zone.min, max: zone.max, zone: zone.name };
-  return OUTER_ETA;
+  if (!area) return null;
+  const n = sectorNumberFromArea(area);
+  const match = n != null
+    ? SECTOR_AREAS.find((s) => s.name === `Sector ${n}`)
+    : findSectorArea(area.replace(/,.*$/, ""));
+  if (match) return match.eta;
+  // Unknown but sector-shaped ("Sector 35") → still give a conservative number.
+  return n != null ? OUTER_ETA : null;
 }
 
 /** "15–20 min" */
