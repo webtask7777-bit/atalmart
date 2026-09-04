@@ -5,9 +5,11 @@ import { CATEGORIES_SEED } from "@/lib/constants";
 interface CategoryBarProps {
   selected: string | null;
   onSelect: (category: string | null) => void;
+  /** Categories with no live products are left out of the strip. */
+  emptyCategories?: Set<string>;
 }
 
-export function CategoryBar({ selected, onSelect }: CategoryBarProps) {
+export function CategoryBar({ selected, onSelect, emptyCategories }: CategoryBarProps) {
   return (
     <div className="overflow-x-auto scrollbar-hide py-3 -mx-4 px-4">
       <div className="flex gap-2 min-w-max">
@@ -17,7 +19,7 @@ export function CategoryBar({ selected, onSelect }: CategoryBarProps) {
           active={selected === null}
           onClick={() => onSelect(null)}
         />
-        {CATEGORIES_SEED.map((cat) => (
+        {CATEGORIES_SEED.filter((cat) => !emptyCategories?.has(cat.name)).map((cat) => (
           <CategoryPill
             key={cat.name}
             icon={cat.icon}

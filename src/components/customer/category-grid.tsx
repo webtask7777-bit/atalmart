@@ -10,12 +10,16 @@ interface CategoryGridProps {
    *  real photo here it renders instead of the seed emoji. Built from the
    *  live catalogue in the home page (see page.tsx → categoryThumbs). */
   categoryThumbs?: Record<string, string>;
+  /** Category names with zero live products — shown dimmed as "Coming
+   *  soon" and not clickable, so a tap never lands on an empty page. */
+  emptyCategories?: Set<string>;
 }
 
 export function CategoryGrid({
   selected,
   onSelect,
   categoryThumbs,
+  emptyCategories,
 }: CategoryGridProps) {
   return (
     <section className="mt-5">
@@ -42,14 +46,23 @@ export function CategoryGrid({
         {CATEGORIES_SEED.map((cat) => {
           const active = selected === cat.name;
           const thumb = categoryThumbs?.[cat.name];
+          const empty = emptyCategories?.has(cat.name) ?? false;
           return (
             <button
               key={cat.name}
-              onClick={() => onSelect(active ? null : cat.name)}
+              onClick={() => !empty && onSelect(active ? null : cat.name)}
+              disabled={empty}
+              aria-disabled={empty}
+              title={empty ? `${cat.name} — coming soon` : cat.name}
               className={`group relative flex flex-col items-center text-center p-1.5 rounded-2xl transition-all ${
                 active ? "ring-2 ring-saffron ring-offset-2" : ""
-              }`}
+              } ${empty ? "opacity-60 cursor-not-allowed" : ""}`}
             >
+              {empty && (
+                <span className="absolute top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-brown/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white whitespace-nowrap">
+                  Coming soon
+                </span>
+              )}
               {/* Clean light tile (Blinkit/Zepto style). White-background
                   product photos sit flush on the near-white tile, so no
                   background removal is ever needed. */}

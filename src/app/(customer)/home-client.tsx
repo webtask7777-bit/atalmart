@@ -23,6 +23,7 @@ import { useOrders } from "@/lib/hooks/use-orders";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useSettings } from "@/lib/store/settings";
+import { CATEGORIES_SEED } from "@/lib/constants";
 import { shuffleForGrid, hashId } from "@/lib/product-order";
 import type { Product, Category } from "@/types";
 
@@ -226,6 +227,21 @@ function HomeContent() {
     return thumbs;
   }, [products, categories]);
 
+  // Categories with no in-stock/active product in the full catalogue. Only
+  // computed on the unfiltered home load (products = whole catalogue there);
+  // while loading or filtering we don't hide anything.
+  const emptyCategories = useMemo(() => {
+    if (loading || selectedCategory || debouncedSearch) return undefined;
+    const idToName = new Map(categories.map((c) => [c.id, c.name]));
+    const seen = new Set<string>();
+    for (const p of products) {
+      const name = p.category?.name ?? idToName.get(p.category_id);
+      if (name) seen.add(name);
+    }
+    if (seen.size === 0) return undefined;
+    return new Set(CATEGORIES_SEED.map((c) => c.name).filter((n) => !seen.has(n)));
+  }, [loading, selectedCategory, debouncedSearch, products, categories]);
+
   const shuffledAll = useMemo(() => shuffleForGrid(products), [products]);
   // Category browsing also benefits from shuffle (so 3 Amul Butter sizes
   // don't appear in a row), but search results stay in API order — when a
@@ -256,7 +272,11 @@ function HomeContent() {
     <div className="max-w-7xl mx-auto px-4 pb-32">
       {/* Sticky category strip (compact) */}
       <div className="sticky top-16 z-30 -mx-4 px-4 bg-white border-b border-gray-100">
-        <CategoryBar selected={selectedCategory} onSelect={setSelectedCategory} />
+        <CategoryBar
+          selected={selectedCategory}
+          onSelect={setSelectedCategory}
+          emptyCategories={emptyCategories}
+        />
       </div>
 
       {!isFiltered && <QuickSearches />}
@@ -276,6 +296,7 @@ function HomeContent() {
           selected={selectedCategory}
           onSelect={setSelectedCategory}
           categoryThumbs={categoryThumbs}
+          emptyCategories={emptyCategories}
         />
       )}
 
