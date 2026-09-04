@@ -12,14 +12,14 @@ const SAFFRON = "FFFF6B00";
  * speeds up the first paint of /admin/orders, /admin/products,
  * /admin/customers significantly.
  */
-async function loadExcelJS() {
+export async function loadExcelJS() {
   return (await import("exceljs")).default;
 }
 
 /**
  * Trigger a download of `buffer` as a file in the browser.
  */
-function download(buffer: ArrayBuffer, filename: string) {
+export function download(buffer: ArrayBuffer, filename: string) {
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
@@ -34,7 +34,7 @@ function download(buffer: ArrayBuffer, filename: string) {
 }
 
 /** Apply Atalmart's saffron header styling to row 1 of a worksheet. */
-function styleHeader(sheet: ExcelJS.Worksheet, widths?: number[]) {
+export function styleHeader(sheet: ExcelJS.Worksheet, widths?: number[]) {
   const row = sheet.getRow(1);
   row.height = 26;
   row.eachCell((cell) => {
@@ -56,7 +56,7 @@ function styleHeader(sheet: ExcelJS.Worksheet, widths?: number[]) {
   sheet.views = [{ state: "frozen", ySplit: 1 }];
 }
 
-function styleBody(sheet: ExcelJS.Worksheet) {
+export function styleBody(sheet: ExcelJS.Worksheet) {
   for (let r = 2; r <= sheet.rowCount; r++) {
     sheet.getRow(r).eachCell((cell) => {
       cell.font = { name: "Arial", size: 10 };
@@ -65,7 +65,7 @@ function styleBody(sheet: ExcelJS.Worksheet) {
   }
 }
 
-function todayStamp(): string {
+export function todayStamp(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -223,15 +223,25 @@ export async function exportProductsToExcel(products: Product[]) {
     { header: "Category", key: "category" },
     { header: "Price (₹)", key: "price" },
     { header: "MRP (₹)", key: "mrp" },
+    { header: "Cost (₹)", key: "cost" },
+    { header: "Margin %", key: "margin" },
     { header: "Unit", key: "unit" },
     { header: "Stock", key: "stock" },
+    { header: "Stock value (₹)", key: "stock_value" },
+    { header: "Supplier", key: "supplier" },
     { header: "Description", key: "description" },
     { header: "Active", key: "active" },
   ];
 
   for (const p of products) {
-    const catIdx = Number(p.category_id) - 1;
-    const catName = CATEGORIES_SEED[catIdx]?.name || p.category_id;
+    // Live mode: category is a joined row with a real name. Demo mode: the id
+    // is the 1-based index into the seed list.
+    const catName =
+      p.category?.name ||
+      CATEGORIES_SEED[Number(p.category_id) - 1]?.name ||
+      p.category_id;
+    const cost = Number(p.cost_price) || 0;
+    const margin = cost > 0 && p.price > 0 ? Math.round(((p.price - cost) / p.price) * 1000) / 10 : null;
     sheet.addRow({
       id: p.id,
       name: p.name,
@@ -239,20 +249,27 @@ export async function exportProductsToExcel(products: Product[]) {
       category: catName,
       price: p.price,
       mrp: p.mrp,
+      cost: cost || "",
+      margin: margin ?? "",
       unit: p.unit,
       stock: p.stock,
+      stock_value: cost > 0 ? Math.round(cost * (Number(p.stock) || 0)) : "",
+      supplier: p.supplier?.name || "",
       description: p.description || "",
       active: p.active ? "Yes" : "No",
     });
   }
 
-  ["E", "F"].forEach((c) => {
+  ["E", "F", "G", "K"].forEach((c) => {
     sheet.getColumn(c).numFmt = '"₹"#,##0';
     sheet.getColumn(c).alignment = { horizontal: "right" };
   });
-  sheet.getColumn("H").alignment = { horizontal: "right" };
+  sheet.getColumn("H").numFmt = '0.0"%"';
+  ["H", "J"].forEach((c) => {
+    sheet.getColumn(c).alignment = { horizontal: "right" };
+  });
 
-  styleHeader(sheet, [14, 28, 24, 22, 12, 12, 12, 10, 38, 10]);
+  styleHeader(sheet, [14, 28, 24, 22, 12, 12, 12, 10, 12, 10, 14, 18, 38, 10]);
   styleBody(sheet);
 
   const buffer = await wb.xlsx.writeBuffer();

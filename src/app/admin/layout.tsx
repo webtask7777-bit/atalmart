@@ -18,6 +18,10 @@ import {
   Users,
   QrCode,
   Megaphone,
+  Truck,
+  Percent,
+  Receipt,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 import { AppProviders } from "@/components/providers";
@@ -45,6 +49,15 @@ const navGroups: NavGroup[] = [
       { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
       { href: "/admin/customers", label: "Customers", icon: Users },
       { href: "/admin/riders", label: "Riders", icon: Bike },
+    ],
+  },
+  {
+    label: "Money",
+    items: [
+      { href: "/admin/purchases", label: "Purchases", icon: Truck },
+      { href: "/admin/pricing", label: "Pricing & Margins", icon: Percent },
+      { href: "/admin/pnl", label: "Profit & Loss", icon: Receipt },
+      { href: "/admin/reports", label: "Reports", icon: FileSpreadsheet },
     ],
   },
   {
