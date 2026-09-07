@@ -147,7 +147,7 @@ function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
             src={banner.fullImage.mobile}
             alt={`${banner.title} — ${banner.subtitle}`}
             loading={eager ? "eager" : "lazy"}
-            className="block w-full h-auto min-h-[150px] sm:min-h-[160px] md:min-h-[200px] object-cover"
+            className="block w-full h-[150px] sm:h-[160px] md:h-auto md:min-h-[200px] object-cover object-left md:object-center"
           />
         </picture>
       </Link>
