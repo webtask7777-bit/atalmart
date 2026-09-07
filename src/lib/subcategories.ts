@@ -46,6 +46,7 @@ export const SUBCATEGORIES: Record<string, Subcat[]> = {
     { name: "Ghee", keywords: ["ghee"] },
   ],
   "Fruits & Vegetables": [
+    { name: "Leafy Greens & Bhaji", icon: "🥬", keywords: ["bhaji", "saag", "palak", "spinach", "methi", "bathua", "lettuce", "patta gobhi", "cabbage"] },
     { name: "Fresh Fruits", keywords: ["apple", "banana", "orange", "mango", "grape", "papaya", "fruit"] },
     { name: "Fresh Vegetables", keywords: ["potato", "onion", "tomato", "aloo", "pyaz", "vegetable", "bhindi", "gobi", "brinjal"] },
     { name: "Herbs & Seasonings", keywords: ["coriander", "mint", "curry leaf", "ginger", "garlic", "chilli"] },
