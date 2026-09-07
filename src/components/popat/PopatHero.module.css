@@ -396,19 +396,37 @@
 
 .dots {
   display: flex;
-  gap: 7px;
+  gap: 0;
   align-items: center;
 }
 
+/* Each dot is a 24×24 tap target (WCAG 2.5.8 / Lighthouse target-size);
+   the visible 8px pill is drawn by ::before so the look stays the same. */
 .dot {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  transition: width 160ms ease;
+}
+
+.dot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
   width: 8px;
   height: 8px;
   background: color-mix(in srgb, var(--ink) 38%, transparent);
   border-radius: 999px;
+  transform: translate(-50%, -50%);
   transition: width 160ms ease, background 160ms ease;
 }
 
 .dot[aria-pressed="true"] {
+  width: 42px;
+}
+
+.dot[aria-pressed="true"]::before {
   width: 26px;
   background: var(--accent);
 }
@@ -662,7 +680,8 @@
   .shell,
   .cta,
   .product,
-  .dot {
+  .dot,
+  .dot::before {
     animation: none;
     transition: none;
   }

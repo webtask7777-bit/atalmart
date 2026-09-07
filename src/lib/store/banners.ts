@@ -86,7 +86,7 @@ const SEED: Banner[] = [
     // every screen). The full Popat brand hero — live text, art-directed for
     // desktop/tablet/mobile — is the PopatHero section further down the home
     // page (src/components/popat).
-    imgSrc: "/popat/products/dal-moth.webp",
+    imgSrc: "/banners/popat-dal-moth-440.webp",
     enabled: true,
     sortOrder: 5,
   },

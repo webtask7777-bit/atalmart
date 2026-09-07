@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./PopatHero.module.css";
 import { popatSlides, type PopatSlide } from "./popat-slides";
 
@@ -30,12 +30,30 @@ export function PopatHero({
   );
   const [rawIndex, setActiveIndex] = useState(firstSlide);
   const [isPaused, setIsPaused] = useState(false);
+  // The hero sits mid-page on Atalmart: don't rotate slides or fetch the next
+  // slide's packshots until the visitor has scrolled near it.
+  const sectionRef = useRef<HTMLElement>(null);
+  const [inView, setInView] = useState(false);
   // Clamp in render (not in an effect) so a shorter `slides` list never
   // leaves the index pointing past the end.
   const activeIndex = rawIndex < slides.length ? rawIndex : 0;
 
   useEffect(() => {
-    if (slides.length < 2 || autoPlayMs <= 0 || isPaused) return;
+    const el = sectionRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: "200px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!inView || slides.length < 2 || autoPlayMs <= 0 || isPaused) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const timer = window.setInterval(() => {
@@ -43,19 +61,19 @@ export function PopatHero({
     }, autoPlayMs);
 
     return () => window.clearInterval(timer);
-  }, [autoPlayMs, isPaused, slides.length]);
+  }, [autoPlayMs, inView, isPaused, slides.length]);
 
   // Warm the next slide's packshots while the current one is showing, so a
   // slide change never paints an empty product stack (the images are only
   // mounted for the active slide and load lazily by default).
   useEffect(() => {
-    if (slides.length < 2) return;
+    if (!inView || slides.length < 2) return;
     const next = slides[(activeIndex + 1) % slides.length];
     for (const item of next.products) {
       const img = new window.Image();
       img.src = item.src;
     }
-  }, [activeIndex, slides]);
+  }, [activeIndex, inView, slides]);
 
   if (!slides.length) return null;
 
@@ -65,6 +83,7 @@ export function PopatHero({
 
   return (
     <section
+      ref={sectionRef}
       className={[styles.hero, className].filter(Boolean).join(" ")}
       data-theme={slide.theme}
       aria-roledescription="carousel"
