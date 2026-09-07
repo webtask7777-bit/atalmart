@@ -27,13 +27,37 @@ interface HeaderProps {
 // what they can type without a "trending" panel.
 const SEARCH_HINTS = ['Search "milk"', 'Search "atta"', 'Search "Maggi"', 'Search "eggs"', 'Search "oil"', 'Search "chips"'];
 
-export function Header({ onSearch }: HeaderProps) {
+/** Search box whose placeholder rotates. Owning the timer here keeps the
+ *  2.6 s tick from re-rendering the whole Header; it pauses in hidden tabs. */
+function SearchInput({
+  value,
+  onChange,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  className: string;
+}) {
   const [hintIdx, setHintIdx] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setHintIdx((i) => (i + 1) % SEARCH_HINTS.length), 2600);
+    const id = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      setHintIdx((i) => (i + 1) % SEARCH_HINTS.length);
+    }, 2600);
     return () => clearInterval(id);
   }, []);
-  const searchHint = SEARCH_HINTS[hintIdx];
+  return (
+    <input
+      type="text"
+      placeholder={SEARCH_HINTS[hintIdx]}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={className}
+    />
+  );
+}
+
+export function Header({ onSearch }: HeaderProps) {
   const itemCount = useCartStore((s) => s.getItemCount());
   const { user, profile } = useAuth();
   const router = useRouter();
@@ -124,13 +148,7 @@ export function Header({ onSearch }: HeaderProps) {
                 size={18}
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"
               />
-              <input
-                type="text"
-                placeholder={searchHint}
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-[14px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
-              />
+              <SearchInput value={searchInput} onChange={handleSearchChange} className="w-full pl-11 pr-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-[14px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors" />
             </div>
           </form>
 
@@ -207,13 +225,7 @@ export function Header({ onSearch }: HeaderProps) {
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
               />
-              <input
-                type="text"
-                placeholder={searchHint}
-                value={searchInput}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors"
-              />
+              <SearchInput value={searchInput} onChange={handleSearchChange} className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors" />
             </div>
           </form>
         </div>

@@ -8,6 +8,7 @@ import {
 } from "@/lib/server/razorpay";
 import { rateLimitWithPrune, clientKey } from "@/lib/server/rate-limit";
 import { isDemoMode } from "@/lib/supabase/helpers";
+import { UPI_UTR_RE, normalizeUtr } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/server/supabase-admin";
 
@@ -26,7 +27,7 @@ interface PlaceBody {
   pincode?: string;
   address_line: string;
   phone: string;
-  payment_method: "cod" | "online";
+  payment_method: "cod" | "online" | "upi";
   notes?: string | null;
   /** Required when payment_method === "online" and the amount owed is > 0. */
   payment?: {
@@ -34,6 +35,10 @@ interface PlaceBody {
     razorpay_payment_id: string;
     razorpay_signature: string;
   };
+  /** Required when payment_method === "upi" and the amount owed is > 0. The
+   *  customer pays the store VPA directly and submits the bank UTR; admin
+   *  verifies it manually before dispatch (no gateway involved). */
+  upi_utr?: string;
 }
 
 /**
@@ -73,7 +78,11 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (body.payment_method !== "cod" && body.payment_method !== "online") {
+  if (
+    body.payment_method !== "cod" &&
+    body.payment_method !== "online" &&
+    body.payment_method !== "upi"
+  ) {
     return NextResponse.json(
       { error: "Invalid payment method" },
       { status: 400 },
@@ -182,7 +191,46 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Direct-UPI: require a plausible UTR (verified manually by admin) ──
+  let upiUtr: string | null = null;
+  if (body.payment_method === "upi" && pricing.total > 0) {
+    const raw = normalizeUtr(body.upi_utr ?? "");
+    // Bank UTRs are typically 12 digits (IMPS/UPI); some banks issue
+    // 10–22 char alphanumeric refs. Loose shape check only — real
+    // verification happens against the bank statement.
+    if (!UPI_UTR_RE.test(raw)) {
+      return NextResponse.json(
+        { error: "Valid UPI UTR / transaction reference required (10–22 characters)" },
+        { status: 400 },
+      );
+    }
+    upiUtr = raw;
+  }
+
   const admin = createAdminClient();
+
+  // ── Admin payment switches (Site Settings) are enforced here, not just in
+  //    the checkout UI. Direct-UPI is allowed only while at least one method
+  //    is on — turning everything off means "no orders right now".
+  {
+    const { data: flags } = await admin
+      .from("settings")
+      .select("cod_enabled, online_payment_enabled")
+      .eq("id", 1)
+      .maybeSingle();
+    const codOn = flags?.cod_enabled !== false;
+    const onlineOn = flags?.online_payment_enabled !== false;
+    const blocked =
+      (body.payment_method === "cod" && !codOn) ||
+      (body.payment_method === "online" && !onlineOn) ||
+      (body.payment_method === "upi" && !codOn && !onlineOn);
+    if (blocked) {
+      return NextResponse.json(
+        { error: "Ye payment method abhi available nahi hai — thodi der baad try karein" },
+        { status: 403 },
+      );
+    }
+  }
 
   // ── Idempotency: never write two orders for one captured payment ──
   if (body.payment_method === "online" && body.payment?.razorpay_payment_id) {
@@ -223,7 +271,9 @@ export async function POST(req: NextRequest) {
       p_phone: body.phone,
       p_payment_method: body.payment_method,
       p_coupon_code: pricing.couponCode,
-      p_notes: body.notes ?? null,
+      p_notes: upiUtr
+        ? `UPI UTR: ${upiUtr} (pending verification)${body.notes ? ` | ${body.notes}` : ""}`
+        : body.notes ?? null,
     },
   );
 

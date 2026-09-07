@@ -97,7 +97,7 @@ delete from public.sectors;
 insert into public.sectors (name, name_hi, pincode, area_type, geometry, centroid_lat, centroid_lng, source, active)
 values`);
   console.log(enriched.map((s, i) => `  ('${s.name}', '${s.name_hi}', '${s.pincode}', '${s.area_type}',
-   ST_GeomFromText('${polyWkt(s)}', 4326), ${s.lat}, ${s.lng}, '${s.source}${s.pincodeApprox ? " (pincode approx)" : ""}', ${s.active})${i < enriched.length - 1 ? "," : ";"}`).join("\n"));
+   extensions.ST_GeomFromText('${polyWkt(s)}', 4326), ${s.lat}, ${s.lng}, '${s.source}${s.pincodeApprox ? " (pincode approx)" : ""}', ${s.active})${i < enriched.length - 1 ? "," : ";"}`).join("\n"));
   console.log(`
 notify pgrst, 'reload schema';
 select count(*) as sectors, count(*) filter (where active) as active_sectors from public.sectors;`);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Plus,
@@ -25,6 +25,8 @@ import { Modal } from "@/components/ui/modal";
 import { ImageUpload } from "@/components/ui/image-upload";
 import { FindImagesPicker } from "@/components/admin/find-images-picker";
 import { subcatsFor } from "@/lib/subcategories";
+import { computeMargin } from "@/lib/pnl";
+import { formatRupees } from "@/lib/money";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import {
   useAllProducts,
@@ -49,6 +51,8 @@ const emptyForm = {
   subcategory: "" as string,
   price: 0,
   mrp: 0,
+  // Landed wholesale cost per unit (migration 016). Drives margin/P&L.
+  cost_price: 0,
   unit: "1 pc",
   image_url: null as string | null,
   // Additional gallery angles (BoP, side, ingredients). The picker writes
@@ -235,6 +239,23 @@ export default function AdminProductsPage() {
     });
   }, [products, search, selectedCategoryId, stockFilter]);
 
+  // Keep the selection honest: drop any id that no longer exists in the
+  // catalog (after a delete + refetch). Otherwise bulk actions target ghost
+  // ids and the header "select all" checkbox miscounts.
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const live = new Set(products.map((p) => p.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (live.has(id)) next.add(id);
+        else changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [products]);
+
   // ─── Bulk actions ─────────────────────────────────
   const toggleSelect = (id: string) => {
     setSelectedIds((s) => {
@@ -247,11 +268,26 @@ export default function AdminProductsPage() {
   const selectAll = () => setSelectedIds(new Set(filtered.map((p) => p.id)));
   const clearSelection = () => setSelectedIds(new Set());
 
+  // These helpers RESOLVE with { error } rather than rejecting, so a plain
+  // Promise.all never surfaces a failure. Count the { error } results and
+  // report the real outcome instead of a blanket "success".
+  const countFailures = (results: { error: unknown }[]) =>
+    results.filter((r) => r.error).length;
+
   const bulkSetActive = async (active: boolean) => {
     const ids = Array.from(selectedIds);
     if (!ids.length) return;
-    await Promise.all(ids.map((id) => updateProduct(id, { active })));
-    toast.success(`${ids.length} product${ids.length > 1 ? "s" : ""} ${active ? "activated" : "deactivated"}`);
+    const results = await Promise.all(ids.map((id) => updateProduct(id, { active })));
+    const failed = countFailures(results);
+    const ok = ids.length - failed;
+    const verb = active ? "activated" : "deactivated";
+    if (failed === 0) {
+      toast.success(`${ok} product${ok > 1 ? "s" : ""} ${verb}`);
+    } else if (ok === 0) {
+      toast.error(`Couldn't ${active ? "activate" : "deactivate"} — ${failed} failed`);
+    } else {
+      toast.warning(`${ok} ${verb}, ${failed} failed`);
+    }
     clearSelection();
     refetch();
   };
@@ -266,8 +302,16 @@ export default function AdminProductsPage() {
       destructive: true,
     });
     if (!ok) return;
-    await Promise.all(ids.map((id) => deleteProduct(id)));
-    toast.success(`${ids.length} product${ids.length > 1 ? "s" : ""} deleted`);
+    const results = await Promise.all(ids.map((id) => deleteProduct(id)));
+    const failed = countFailures(results);
+    const done = ids.length - failed;
+    if (failed === 0) {
+      toast.success(`${done} product${done > 1 ? "s" : ""} deleted`);
+    } else if (done === 0) {
+      toast.error(`Couldn't delete — all ${failed} failed`);
+    } else {
+      toast.warning(`${done} deleted, ${failed} failed`);
+    }
     clearSelection();
     refetch();
   };
@@ -294,6 +338,7 @@ export default function AdminProductsPage() {
       subcategory: p.subcategory ?? "",
       price: p.price,
       mrp: p.mrp,
+      cost_price: p.cost_price ?? 0,
       unit: p.unit,
       image_url: p.image_url,
       image_urls: p.image_urls ?? [],
@@ -369,6 +414,7 @@ export default function AdminProductsPage() {
       subcategory: nullable(f.subcategory),
       price: f.price,
       mrp: f.mrp,
+      cost_price: f.cost_price || 0,
       unit: f.unit,
       image_url: f.image_url,
       image_urls: f.image_urls,
@@ -394,17 +440,24 @@ export default function AdminProductsPage() {
 
   const handleSave = async () => {
     if (!form.name.trim()) return toast.error("Product name is required");
+    if (!form.category_id) return toast.error("Please choose a category");
     if (form.price <= 0) return toast.error("Price must be greater than 0");
+    if (form.mrp > 0 && form.mrp < form.price)
+      return toast.error("MRP can't be less than the selling price");
     setSaving(true);
     try {
       const payload = buildPayload(form);
-      if (editingId) {
-        await updateProduct(editingId, payload as Parameters<typeof updateProduct>[1]);
-        toast.success("Product updated");
-      } else {
-        await createProduct(payload as Parameters<typeof createProduct>[0]);
-        toast.success("Product created");
+      // These helpers RETURN { error } (they don't throw), so we must inspect
+      // it — otherwise a rejected write shows a success toast and closes the
+      // modal with nothing saved.
+      const { error } = editingId
+        ? await updateProduct(editingId, payload as Parameters<typeof updateProduct>[1])
+        : await createProduct(payload as Parameters<typeof createProduct>[0]);
+      if (error) {
+        toast.error(error.message || "Failed to save product");
+        return; // keep the modal open so the operator can retry
       }
+      toast.success(editingId ? "Product updated" : "Product created");
       setModalOpen(false);
       refetch();
     } catch {
@@ -693,9 +746,15 @@ export default function AdminProductsPage() {
                       <th className="text-left px-3 py-3 w-10">
                         <input
                           type="checkbox"
-                          checked={selectedIds.size > 0 && selectedIds.size === filtered.length}
+                          // "All selected" = every VISIBLE row is selected, not
+                          // just a matching count (selection can span filters).
+                          checked={
+                            filtered.length > 0 &&
+                            filtered.every((p) => selectedIds.has(p.id))
+                          }
                           onChange={() =>
-                            selectedIds.size === filtered.length
+                            filtered.length > 0 &&
+                            filtered.every((p) => selectedIds.has(p.id))
                               ? clearSelection()
                               : selectAll()
                           }
@@ -739,18 +798,7 @@ export default function AdminProductsPage() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-lg overflow-hidden shrink-0">
-                                {product.image_url ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    src={product.image_url}
-                                    alt=""
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  "📦"
-                                )}
-                              </div>
+                              <ProductThumb src={product.image_url} name={product.name} />
                               <div className="min-w-0">
                                 <p className="font-medium text-brown truncate">{product.name}</p>
                                 <p className="text-xs text-gray-500">
@@ -967,6 +1015,9 @@ export default function AdminProductsPage() {
               onChange={(e) => updateField("category_id", e.target.value)}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-brown focus:outline-none focus:border-saffron"
             >
+              {/* Explicit placeholder so an unset category_id isn't rendered as
+                  a silently-picked first option (which never fires onChange). */}
+              {!form.category_id && <option value="">— select a category —</option>}
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.icon} {cat.name}
@@ -1002,6 +1053,13 @@ export default function AdminProductsPage() {
           })()}
           <div className="grid grid-cols-3 gap-3">
             <Input
+              label="Cost (₹)"
+              type="number"
+              value={form.cost_price || ""}
+              onChange={(e) => updateField("cost_price", Number(e.target.value))}
+              placeholder="wholesale"
+            />
+            <Input
               label="Price (₹)"
               type="number"
               value={form.price || ""}
@@ -1013,11 +1071,39 @@ export default function AdminProductsPage() {
               value={form.mrp || ""}
               onChange={(e) => updateField("mrp", Number(e.target.value))}
             />
+          </div>
+          {(() => {
+            const m = computeMargin(form.price, form.cost_price, form.mrp);
+            if (m.costMissing)
+              return (
+                <p className="text-xs text-amber-600">
+                  No cost set — margin &amp; P&amp;L can&apos;t be tracked for this SKU.
+                </p>
+              );
+            return (
+              <p
+                className={`text-xs ${
+                  m.lossMaking ? "text-red-600 font-semibold" : "text-indian-green"
+                }`}
+              >
+                {m.lossMaking
+                  ? `⚠ Selling ${formatRupees(-m.marginRupees)} below cost`
+                  : `Margin ${formatRupees(m.marginRupees)} (${m.marginPct}% of price · ${m.markupPct}% markup)`}
+              </p>
+            );
+          })()}
+          <div className="grid grid-cols-2 gap-3">
             <Input
               label="Stock"
               type="number"
               value={form.stock || ""}
               onChange={(e) => updateField("stock", Number(e.target.value))}
+            />
+            <Input
+              label="Unit"
+              value={form.unit}
+              onChange={(e) => updateField("unit", e.target.value)}
+              placeholder="500 ml, 1 kg, etc."
             />
           </div>
           {editingId && (
@@ -1028,12 +1114,6 @@ export default function AdminProductsPage() {
               <StockHistoryPanel productId={editingId} />
             </div>
           )}
-          <Input
-            label="Unit"
-            value={form.unit}
-            onChange={(e) => updateField("unit", e.target.value)}
-            placeholder="500 ml, 1 kg, etc."
-          />
           <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
@@ -1265,6 +1345,33 @@ export default function AdminProductsPage() {
             }
           }}
         />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Product row thumbnail. Lazy-loads the image (the list can render hundreds of
+ * rows, so eager loading fired hundreds of requests at once) and falls back to
+ * the 📦 placeholder if the URL fails to load (many images are external URLs
+ * that can 404 — without this the browser shows its broken-image glyph).
+ */
+function ProductThumb({ src, name }: { src: string | null; name: string }) {
+  const [failed, setFailed] = useState(false);
+  const showImg = src && !failed;
+  return (
+    <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center text-lg overflow-hidden shrink-0">
+      {showImg ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={name}
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="w-full h-full object-cover"
+        />
+      ) : (
+        "📦"
       )}
     </div>
   );

@@ -39,6 +39,28 @@ export const SUPPORT_EMAIL = "webtask7777@gmail.com";
 export const FSSAI_LICENSE: string | null = null;
 export const GSTIN: string | null = null;
 
+/** Customer-facing labels for orders.payment_method. */
+export const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cod: "Cash on Delivery",
+  online: "Online (UPI / Card)",
+  upi: "UPI — Direct Pay",
+};
+export function paymentMethodLabel(method: string | null | undefined): string {
+  const key = (method || "").toLowerCase();
+  return PAYMENT_METHOD_LABELS[key] ?? (method || "—");
+}
+/** Money already captured by us (auto-refundable). Direct-UPI is NOT prepaid
+ *  until the admin verifies the UTR against the bank statement. */
+export function isCapturedPayment(method: string | null | undefined): boolean {
+  return (method || "").toLowerCase() === "online";
+}
+
+/** Bank UTR / UPI transaction reference: 10–22 alphanumerics after cleanup. */
+export const UPI_UTR_RE = /^[A-Z0-9]{10,22}$/;
+export function normalizeUtr(raw: string): string {
+  return raw.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+}
+
 /** Standard UPI deep link (NPCI spec) — opens GPay/PhonePe/Paytm chooser on mobile. */
 export function buildUpiIntentUrl(amount: number, note = "Atalmart order") {
   const params = new URLSearchParams({

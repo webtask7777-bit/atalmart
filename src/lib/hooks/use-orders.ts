@@ -22,7 +22,7 @@ interface CreateOrderInput {
   items: CartItem[];
   address_line: string;
   phone: string;
-  payment_method: "cod" | "online";
+  payment_method: "cod" | "online" | "upi";
   total: number;
   delivery_fee: number;
   discount?: number;
@@ -39,9 +39,13 @@ interface CreateOrderInput {
     razorpay_payment_id: string;
     razorpay_signature: string;
   };
+  /** UTR / transaction reference the customer submits after paying the store's
+   *  UPI ID directly. Required (server-side) when payment_method === "upi". */
+  upi_utr?: string;
 }
 
-export function useOrders() {
+export function useOrders(options?: { limit?: number }) {
+  const limit = options?.limit;
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -71,15 +75,17 @@ export function useOrders() {
       return;
     }
 
-    const { data } = await supabase
+    let query = supabase
       .from("orders")
       .select("*, items:order_items(*), rider:riders(*)")
       .eq("user_id", user.id)
       .order("placed_at", { ascending: false });
+    if (limit) query = query.limit(limit);
+    const { data } = await query;
 
     setOrders((data as Order[]) || []);
     setLoading(false);
-  }, []);
+  }, [limit]);
 
   useEffect(() => {
     fetchOrders();
@@ -187,7 +193,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{ data: Orde
       phone: input.phone,
       payment_method: input.payment_method,
       coupon_code: input.coupon_code || null,
-      notes: null,
+      notes: input.upi_utr ? `UPI UTR: ${input.upi_utr} (pending verification)` : null,
       placed_at: new Date().toISOString(),
       delivered_at: null,
       profile: {
@@ -319,6 +325,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{ data: Orde
         phone: input.phone,
         payment_method: input.payment_method,
         payment: input.payment,
+        upi_utr: input.upi_utr,
       }),
     });
   } catch {

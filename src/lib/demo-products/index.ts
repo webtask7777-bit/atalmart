@@ -74,8 +74,10 @@ export async function loadCategory(id: string): Promise<Product[]> {
   const loader = loaders[id];
   if (!loader) return [];
   const mod = await loader();
-  categoryCache.set(id, mod.products);
-  return mod.products;
+  const { paintDemoImages } = await import("./paint-images");
+  const painted = await paintDemoImages(mod.products);
+  categoryCache.set(id, painted);
+  return painted;
 }
 
 /**
@@ -91,8 +93,10 @@ export async function loadAllDemoProducts(): Promise<Product[]> {
   allPromise = Promise.all(
     Object.entries(loaders).map(async ([id, loader]) => {
       const mod = await loader();
-      categoryCache.set(id, mod.products);
-      return mod.products;
+      const { paintDemoImages } = await import("./paint-images");
+      const painted = await paintDemoImages(mod.products);
+      categoryCache.set(id, painted);
+      return painted;
     }),
   )
     .then((arrays) => {

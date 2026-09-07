@@ -38,7 +38,8 @@ export interface Margin {
   mrpDiscountPct: number;
 }
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
+/** Round to 2 decimals (rupees.paise). */
+export const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Per-unit margin breakdown for one price/cost/mrp triple. */
 export function computeMargin(

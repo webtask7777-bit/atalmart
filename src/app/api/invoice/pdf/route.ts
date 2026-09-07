@@ -1,3 +1,4 @@
+import { paymentMethodLabel } from "@/lib/constants";
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
 import { isDemoMode } from "@/lib/supabase/helpers";
@@ -254,12 +255,7 @@ export async function POST(req: NextRequest) {
     order.payment_method ||
     note.match(/Payment:\s*(\w+)/)?.[1] ||
     "";
-  const payment =
-    payRaw === "cod"
-      ? "Cash on Delivery"
-      : payRaw === "online"
-        ? "Online (UPI / Card)"
-        : payRaw || "—";
+  const payment = paymentMethodLabel(payRaw);
 
   const colWidth = (width - 2 * margin) / 3;
   drawLabel(page, "BILLED TO", margin, y, helv);

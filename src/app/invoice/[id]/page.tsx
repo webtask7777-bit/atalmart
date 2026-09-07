@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useOrder } from "@/lib/hooks/use-orders";
-import { ORDER_STATUS_LABELS , GSTIN, FSSAI_LICENSE } from "@/lib/constants";
+import { ORDER_STATUS_LABELS, GSTIN, FSSAI_LICENSE, paymentMethodLabel } from "@/lib/constants";
 import { useSettings } from "@/lib/store/settings";
 import { Printer, Download, ArrowLeft, X, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -63,7 +63,7 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
     order.payment_method ||
     note.match(/Payment:\s*(\w+)/)?.[1] ||
     "—";
-  const paymentMethod = paymentMethodRaw === "cod" ? "Cash on Delivery" : paymentMethodRaw === "online" ? "Online (UPI / Card)" : paymentMethodRaw;
+  const paymentMethod = paymentMethodLabel(paymentMethodRaw);
   const couponCode =
     order.coupon_code ||
     note.match(/Coupon:\s*([A-Z0-9]+)/)?.[1] ||

@@ -463,10 +463,21 @@ function OrderCard({
             className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${
               order.payment_method === "online"
                 ? "bg-green-light text-indian-green"
-                : "bg-amber-100 text-amber-700"
+                : order.payment_method === "upi"
+                  ? "bg-blue-50 text-blue-700"
+                  : "bg-amber-100 text-amber-700"
             }`}
+            title={
+              order.payment_method === "upi"
+                ? "Customer paid by UPI (UTR submitted) — do NOT collect cash"
+                : undefined
+            }
           >
-            {order.payment_method === "online" ? "Paid" : "COD"}
+            {order.payment_method === "online"
+              ? "Paid"
+              : order.payment_method === "upi"
+                ? "UPI paid"
+                : "COD"}
           </span>
         </div>
       </div>

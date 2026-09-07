@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/supabase/helpers";
+import { CUSTOMER_PRODUCT_SELECT } from "@/lib/supabase/product-columns";
 import {
   demoCategories,
   featuredProducts,
@@ -113,25 +114,43 @@ export function useProducts(options?: {
         catRows?.find((c) => c.name === options.categoryName)?.id ?? null;
     }
 
-    let query = supabase
-      .from("products")
-      .select("*, category:categories(*), variants:product_variants(*)")
-      .eq("active", true)
-      .order("created_at", { ascending: false });
+    // PostgREST caps a response at 1000 rows (supabase/config.toml max_rows)
+    // and the catalogue is 1300+ SKUs, so page explicitly — otherwise the home
+    // grid, the "Coming soon" category logic and the item counts silently
+    // stop at the newest 1000 products.
+    const pageSize = 1000;
+    const buildQuery = (from: number) => {
+      let q = supabase
+        .from("products")
+        // Customer-facing: cost_price / supplier_id are excluded (admin-only).
+        .select(CUSTOMER_PRODUCT_SELECT)
+        .eq("active", true)
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (categoryUuid) q = q.eq("category_id", categoryUuid);
+      if (options?.search) {
+        q = q.or(
+          `name.ilike.%${options.search}%,name_hi.ilike.%${options.search}%,description.ilike.%${options.search}%`,
+        );
+      }
+      return q;
+    };
+    const fetchAllPages = async () => {
+      const all: Product[] = [];
+      for (let from = 0; ; from += pageSize) {
+        const { data, error } = await buildQuery(from);
+        if (error || !data || data.length === 0) break;
+        all.push(...(data as unknown as Product[]));
+        if (data.length < pageSize) break;
+      }
+      return all;
+    };
 
-    if (categoryUuid) {
-      query = query.eq("category_id", categoryUuid);
-    }
-    if (options?.search) {
-      query = query.or(
-        `name.ilike.%${options.search}%,name_hi.ilike.%${options.search}%,description.ilike.%${options.search}%`,
-      );
-    }
-
-    const [prodResult, catResult] = await Promise.all([query, catPromise]);
+    const [allProducts, catResult] = await Promise.all([fetchAllPages(), catPromise]);
 
     if (myReqId !== reqIdRef.current) return;
-    setProducts((prodResult.data as Product[]) || []);
+    setProducts(allProducts);
     setCategories((catResult.data as Category[]) || []);
     setLoading(false);
   }, [options?.categoryId, options?.categoryName, options?.search]);
@@ -153,7 +172,10 @@ export function useAllProducts() {
     setLoading(true);
     if (isDemoMode()) {
       const base = await loadAllDemoProducts();
-      setProducts(mergeRuntime(base));
+      // Demo sandbox: synthesise wholesale costs so the Pricing & P&L pages
+      // have margins to show. No-op in live mode (real costs come from the DB).
+      const { withDemoCosts } = await import("@/lib/demo-costs");
+      setProducts(withDemoCosts(mergeRuntime(base)));
       setLoading(false);
       return;
     }
@@ -168,7 +190,7 @@ export function useAllProducts() {
     for (;;) {
       const { data, error } = await supabase
         .from("products")
-        .select("*, category:categories(*), variants:product_variants(*)")
+        .select("*, category:categories(*), variants:product_variants(*), supplier:suppliers(id,name)")
         .order("created_at", { ascending: false })
         .range(from, from + pageSize - 1);
       if (error || !data || data.length === 0) break;
@@ -230,12 +252,13 @@ export function useProduct(id: string | undefined) {
       const supabase = createClient();
       const { data } = await supabase
         .from("products")
-        .select("*, category:categories(*), variants:product_variants(*)")
+        // Customer-facing: cost_price / supplier_id are excluded (admin-only).
+        .select(CUSTOMER_PRODUCT_SELECT)
         .eq("id", id)
         .eq("active", true)
         .maybeSingle();
       if (!cancelled) {
-        setProduct((data as Product) || null);
+        setProduct((data as unknown as Product) || null);
         setLoading(false);
       }
     })();

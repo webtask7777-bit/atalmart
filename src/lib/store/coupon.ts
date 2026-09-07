@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from "sonner";
 import { COUPONS, type Coupon } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/supabase/helpers";
@@ -86,11 +87,18 @@ function couponToRow(c: Coupon) {
   };
 }
 
-/** Fire-and-forget DB write; log (don't throw) so optimistic UI never blocks. */
+/**
+ * Fire-and-forget DB write; optimistic UI never blocks — but failure must be
+ * VISIBLE, not just console.warn'd: the server pricing route reads the DB, so
+ * a failed write means the admin sees a coupon that customers can't use.
+ */
 function warnOnError(label: string, p: PromiseLike<{ error: unknown }>) {
   Promise.resolve(p).then(({ error }) => {
     if (error && typeof window !== "undefined") {
       console.warn(`[coupons] ${label} failed`, error);
+      toast.error(
+        `Coupon ${label} did NOT reach the database — customers won't see this change. Retry.`,
+      );
     }
   });
 }

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { APP_NAME } from "@/lib/constants";
 import { isDemoMode } from "@/lib/supabase/helpers";
 import {
-  getPublicProduct,
+  getPublicProductResult,
   productDisplayName,
   productMetaDescription,
   productOgImage,
@@ -22,11 +22,14 @@ const BASE = "https://atalmart.com";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const product = await getPublicProduct(id);
+  const { product, failed } = await getPublicProductResult(id);
 
   if (!product) {
-    // Demo mode or unknown id — keep it out of the index, fall back to defaults.
-    return { title: "Product", robots: { index: false, follow: true } };
+    // Lookup failed (outage / env) → plain title, indexable, so a blip never
+    // de-indexes a live SKU. Genuinely unknown id → noindex.
+    return failed
+      ? { title: "Product" }
+      : { title: "Product", robots: { index: false, follow: true } };
   }
 
   const title = `${productDisplayName(product)} — ₹${product.price}`;
@@ -63,10 +66,13 @@ export default async function ProductPage({ params }: Props) {
 
   let jsonLd: Record<string, unknown> | null = null;
   if (!isDemoMode()) {
-    const product = await getPublicProduct(id);
+    const { product, failed } = await getPublicProductResult(id);
     // Real 404 (not a 200 with "Product not found") so dead SKUs drop out of
-    // the index and the branded not-found page shows.
-    if (!product) notFound();
+    // the index and the branded not-found page shows — but only when the
+    // lookup actually ran. On a Supabase error we fall through and let the
+    // client component fetch (and show its own not-found state if needed).
+    if (!product && !failed) notFound();
+    if (product) {
 
     const images = [product.image_url, ...(product.image_urls ?? [])].filter(
       (u): u is string => Boolean(u),
@@ -94,6 +100,7 @@ export default async function ProductPage({ params }: Props) {
         areaServed: "Naya Raipur, Chhattisgarh",
       },
     };
+    }
   }
 
   return (

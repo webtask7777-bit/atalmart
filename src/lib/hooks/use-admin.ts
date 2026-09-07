@@ -32,7 +32,10 @@ function creditRefundToWallet(
     order.notes?.match(/Payment:\s*(\w+)/)?.[1] ||
     ""
   ).toLowerCase();
-  const isPrepaid = paymentMethod !== "" && paymentMethod !== "cod";
+  // Only money we actually captured (Razorpay) is auto-refunded. Direct-UPI
+  // orders carry an UNVERIFIED UTR — the admin refunds those manually after
+  // checking the bank statement, otherwise a fake UTR would mint wallet credit.
+  const isPrepaid = paymentMethod === "online";
   if (reason === "cancel" && !isPrepaid) return;
 
   let amount = order.total;

@@ -51,6 +51,8 @@ export interface ProductVariant {
   unit: string;                 // "500 ml", "1 L", "200 g"
   price: number;
   mrp: number;
+  /** Landed wholesale cost per unit for this pack size (migration 016). */
+  cost_price?: number;
   stock: number;
   sort_order: number;
   is_default: boolean;
@@ -70,6 +72,12 @@ export interface Product {
   subcategory?: string | null;
   price: number;
   mrp: number;
+  /** Landed wholesale cost per unit (migration 016). 0 = not entered yet.
+   *  This is what the P&L treats as cost of goods sold. */
+  cost_price?: number;
+  /** Supplier this stock is procured from (Flipkart Wholesale by default). */
+  supplier_id?: string | null;
+  supplier?: Supplier;
   unit: string;
   image_url: string | null;
   /** Additional gallery images (back-of-pack, side, nutrition label, etc.).
@@ -175,6 +183,9 @@ export interface OrderItem {
   product_name: string;
   quantity: number;
   price: number;
+  /** COGS snapshot frozen at sale time (migration 016). Survives later cost
+   *  edits so historical P&L stays accurate. */
+  cost_price?: number;
   /** Variant chosen at order time. Null = single-pack product. */
   variant_id?: string | null;
   /** Snapshot of variant.unit at order time so historic orders survive
@@ -224,4 +235,72 @@ export interface Review {
   created_at: string;
   order_id?: string; // verified purchase if present
   hidden?: boolean; // admin-moderated
+}
+
+// ─── Procurement / P&L (migration 016) ───────────────────────────────────────
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  gstin?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+export type PurchaseOrderStatus = "draft" | "received" | "cancelled";
+
+/** One line of a wholesale invoice (e.g. a Flipkart Wholesale bill row). */
+export interface PurchaseOrderItem {
+  id: string;
+  po_id: string;
+  /** Matched catalog product, or null when the line is free-text / unmatched. */
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  /** Pre-tax wholesale price per unit. */
+  unit_cost: number;
+  /** GST % applied to this line (5, 12, 18…). */
+  tax_rate: number;
+  /** unit_cost × quantity (taxable value, pre-tax). */
+  line_total: number;
+  created_at: string;
+  product?: Product;
+}
+
+/** A wholesale purchase invoice header. Receiving it adds stock + writes the
+ *  landed cost back onto each product. */
+export interface PurchaseOrder {
+  id: string;
+  supplier_id: string | null;
+  invoice_number?: string | null;
+  invoice_date?: string | null;
+  status: PurchaseOrderStatus;
+  /** Header freight, allocated across lines pro-rata on receive. */
+  shipping_total: number;
+  /** Any other header charge (handling, packing), allocated like shipping. */
+  other_charges: number;
+  goods_subtotal: number;
+  tax_total: number;
+  grand_total: number;
+  notes?: string | null;
+  received_at?: string | null;
+  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  supplier?: Supplier;
+  items?: PurchaseOrderItem[];
+}
+
+/** A draft PO line while editing (before it has a DB id). */
+export interface DraftPurchaseLine {
+  product_id: string | null;
+  product_name: string;
+  quantity: number;
+  unit_cost: number;
+  tax_rate: number;
 }

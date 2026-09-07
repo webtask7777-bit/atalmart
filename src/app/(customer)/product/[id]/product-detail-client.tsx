@@ -315,7 +315,7 @@ export function ProductDetailClient() {
                   fill
                   sizes="(max-width: 768px) 100vw, 500px"
                   className="object-contain p-6"
-                  priority
+                  preload
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-7xl">

@@ -47,6 +47,7 @@ const isDev = process.env.NODE_ENV !== "production";
  *   • Supabase       — data/auth/storage/realtime (connect)
  *   • Razorpay       — Checkout.js (script), payment modal (frame), API (connect)
  *   • MSG91/phone91  — OTP widget script + its iframe/API
+ *   • Google reCAPTCHA — loaded by the MSG91 widget when invisible captcha is on
  *   • unpkg.com      — Leaflet JS/CSS for the service-area + rider maps
  *   • OpenStreetMap  — map tiles (img)
  *   • Vercel         — Analytics + Speed Insights beacons
@@ -60,12 +61,12 @@ const isDev = process.env.NODE_ENV !== "production";
  */
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://checkout.razorpay.com https://*.razorpay.com https://verify.msg91.com https://verify.phone91.com https://*.msg91.com https://unpkg.com https://va.vercel-scripts.com`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""} https://checkout.razorpay.com https://*.razorpay.com https://verify.msg91.com https://verify.phone91.com https://*.msg91.com https://unpkg.com https://va.vercel-scripts.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net`,
   "style-src 'self' 'unsafe-inline' https://unpkg.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  `connect-src 'self'${isDev ? " ws: wss:" : ""} https://*.supabase.co wss://*.supabase.co https://*.razorpay.com https://*.msg91.com https://*.phone91.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://tile.openstreetmap.org`,
-  "frame-src 'self' https://*.razorpay.com https://*.msg91.com https://*.phone91.com",
+  `connect-src 'self'${isDev ? " ws: wss:" : ""} https://*.supabase.co wss://*.supabase.co https://*.razorpay.com https://*.msg91.com https://*.phone91.com https://vitals.vercel-insights.com https://va.vercel-scripts.com https://tile.openstreetmap.org https://www.google.com https://www.recaptcha.net`,
+  "frame-src 'self' https://*.razorpay.com https://*.msg91.com https://*.phone91.com https://www.google.com https://www.recaptcha.net",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "media-src 'self' data: blob:",

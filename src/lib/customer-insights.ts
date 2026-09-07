@@ -51,8 +51,9 @@ const readMeta = (order: Order) => {
     notes.match(/Payment:\s*(\w+)/)?.[1] ||
     ""
   ).toLowerCase();
+  // Direct-UPI is a prepaid channel for analytics purposes.
   const payment: "cod" | "online" | "unknown" =
-    paymentMatch === "cod" || paymentMatch === "online" ? paymentMatch : "unknown";
+    paymentMatch === "cod" ? "cod" : paymentMatch === "online" || paymentMatch === "upi" ? "online" : "unknown";
   const coupon =
     order.coupon_code ||
     notes.match(/Coupon:\s*([A-Z0-9]+)/)?.[1] ||

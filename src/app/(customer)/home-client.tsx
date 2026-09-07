@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Clock, ShieldCheck, Truck, Search, ChevronDown } from "lucide-react";
@@ -128,9 +128,21 @@ function HomeContent() {
   // ?category=<name> deep-links straight into a category (used by the
   // /delivery/<sector> landing pages). Only seeds the initial state — the
   // strip/grid keep owning it afterwards.
-  const urlCategory = searchParams.get("category");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    urlCategory && CATEGORIES_SEED.some((c) => c.name === urlCategory) ? urlCategory : null,
+  // ?category= deep links (sector pages, shared URLs). Derived-state pattern:
+  // the URL value wins whenever it changes; a tap on the strip overrides it
+  // until the URL changes again. No effect needed, so back/forward and
+  // in-page links to /?category=X all stay in sync.
+  const rawUrlCategory = searchParams.get("category");
+  const urlCategory =
+    rawUrlCategory && CATEGORIES_SEED.some((c) => c.name === rawUrlCategory) ? rawUrlCategory : null;
+  const [catState, setCatState] = useState<{ url: string | null; value: string | null }>({
+    url: urlCategory,
+    value: urlCategory,
+  });
+  const selectedCategory = catState.url === urlCategory ? catState.value : urlCategory;
+  const setSelectedCategory = useCallback(
+    (value: string | null) => setCatState({ url: urlCategory, value }),
+    [urlCategory],
   );
   const [selectedSub, setSelectedSub] = useState<string | null>(null);
   // Reset the subcategory whenever the parent category changes (or clears).
@@ -162,26 +174,7 @@ function HomeContent() {
   });
   const { categories } = useCategories();
 
-  // ── Buy again: products from this customer's past orders ──
   const { user } = useAuth();
-  const { orders: myOrders } = useOrders();
-  const buyAgain = useMemo(() => {
-    if (!user || myOrders.length === 0 || products.length === 0) return [] as Product[];
-    const byId = new Map(products.map((p) => [p.id, p]));
-    const seen = new Set<string>();
-    const out: Product[] = [];
-    for (const o of myOrders) {
-      if (o.status === "cancelled") continue;
-      for (const it of o.items ?? []) {
-        const p = byId.get(it.product_id);
-        if (!p || seen.has(p.id) || p.stock <= 0) continue;
-        seen.add(p.id);
-        out.push(p);
-        if (out.length >= 12) return out;
-      }
-    }
-    return out;
-  }, [user, myOrders, products]);
 
   // ── Grid pagination ── keyed by the current view so switching category or
   // search naturally starts at the first page (no reset effect needed).
@@ -368,20 +361,8 @@ function HomeContent() {
                     ))}
                   </div>
                   {gridLimit < viewProducts.length && (
-                    <div className="mt-5 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => setGridLimit((n) => n + GRID_PAGE * 2)}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-saffron/40 bg-white text-saffron-deep font-bold text-sm hover:bg-saffron-light hover:border-saffron transition-colors"
-                      >
-                        Show more
-                        <ChevronDown size={16} />
-                        <span className="text-xs font-semibold text-gray-500">
-                          ({viewProducts.length - gridLimit} more)
-                        </span>
-                      </button>
-                    </div>
-                  )}
+  <ShowMoreButton remaining={viewProducts.length - gridLimit} onClick={() => setGridLimit((n) => n + GRID_PAGE * 2)} />
+)}
                 </>
               ) : (
                 <EmptyState search={debouncedSearch} />
@@ -392,17 +373,7 @@ function HomeContent() {
       ) : (
         // Modern home view: rails + grid
         <>
-          {buyAgain.length > 0 && (
-            <ProductRail
-              title="Buy again"
-              subtitle="Aapke pichhle orders se"
-              emoji="🔁"
-              products={buyAgain}
-              seeAllHref="/orders"
-              seeAllLabel="My orders"
-              accent="green"
-            />
-          )}
+          {user && <BuyAgainRail products={products} />}
 
           {rails.topDeals.length > 0 && (
             <ProductRail
@@ -505,20 +476,8 @@ function HomeContent() {
               ))}
             </div>
             {gridLimit < shuffledAll.length && (
-              <div className="mt-5 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setGridLimit((n) => n + GRID_PAGE * 2)}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-saffron/40 bg-white text-saffron-deep font-bold text-sm hover:bg-saffron-light hover:border-saffron transition-colors"
-                >
-                  Show more
-                  <ChevronDown size={16} />
-                  <span className="text-xs font-semibold text-gray-500">
-                    ({shuffledAll.length - gridLimit} more)
-                  </span>
-                </button>
-              </div>
-            )}
+  <ShowMoreButton remaining={shuffledAll.length - gridLimit} onClick={() => setGridLimit((n) => n + GRID_PAGE * 2)} />
+)}
           </section>
         </>
       )}
@@ -529,6 +488,57 @@ function HomeContent() {
 }
 
 // ───────────── Helpers ─────────────
+
+/** "Buy again" rail — mounted only for logged-in customers so anonymous
+ *  visits never touch the orders table. Pulls just the latest 20 orders. */
+function BuyAgainRail({ products }: { products: Product[] }) {
+  const { orders } = useOrders({ limit: 20 });
+  const buyAgain = useMemo(() => {
+    if (orders.length === 0 || products.length === 0) return [] as Product[];
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const seen = new Set<string>();
+    const out: Product[] = [];
+    for (const o of orders) {
+      if (o.status === "cancelled") continue;
+      for (const it of o.items ?? []) {
+        const p = byId.get(it.product_id);
+        if (!p || seen.has(p.id) || p.stock <= 0) continue;
+        seen.add(p.id);
+        out.push(p);
+        if (out.length >= 12) return out;
+      }
+    }
+    return out;
+  }, [orders, products]);
+  if (buyAgain.length === 0) return null;
+  return (
+    <ProductRail
+      title="Buy again"
+      subtitle="Aapke pichhle orders se"
+      emoji="🔁"
+      products={buyAgain}
+      seeAllHref="/orders"
+      seeAllLabel="My orders"
+      accent="green"
+    />
+  );
+}
+
+function ShowMoreButton({ remaining, onClick }: { remaining: number; onClick: () => void }) {
+  return (
+    <div className="mt-5 flex justify-center">
+      <button
+        type="button"
+        onClick={onClick}
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border-2 border-saffron/40 bg-white text-saffron-deep font-bold text-sm hover:bg-saffron-light hover:border-saffron transition-colors"
+      >
+        Show more
+        <ChevronDown size={16} />
+        <span className="text-xs font-semibold text-gray-500">({remaining} more)</span>
+      </button>
+    </div>
+  );
+}
 
 /** One-tap searches under the category strip. Plain links so they work in
  *  the server-rendered shell too. */

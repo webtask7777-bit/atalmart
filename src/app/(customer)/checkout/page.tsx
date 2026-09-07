@@ -12,7 +12,10 @@ import {
   Check,
   Home,
   Briefcase,
+  Smartphone,
+  Copy,
 } from "lucide-react";
+import QRCode from "qrcode";
 import { useCartStore, useCartHydrated } from "@/lib/store/cart";
 import { useCouponStore } from "@/lib/store/coupon";
 import { useWalletStore } from "@/lib/store/wallet";
@@ -25,6 +28,10 @@ import {
   calculateCouponDiscount,
   isServiceablePincode,
   parseServiceablePincodes,
+  UPI_ID,
+  buildUpiIntentUrl,
+  UPI_UTR_RE,
+  normalizeUtr,
 } from "@/lib/constants";
 import { useSettings } from "@/lib/store/settings";
 import { useUserPincodeStore } from "@/lib/store/user-pincode";
@@ -60,6 +67,8 @@ export default function CheckoutPage() {
     onlinePaymentEnabled,
     serviceablePincodes,
   } = settings;
+  // Admin pauses intake by turning every method off — UPI must respect that too.
+  const paymentsPaused = !codEnabled && !onlinePaymentEnabled;
   const setUserPincode = useUserPincodeStore((s) => s.setPincode);
   const walletBalance = useWalletStore((s) => s.balance);
   const spendFromWallet = useWalletStore((s) => s.spend);
@@ -68,7 +77,9 @@ export default function CheckoutPage() {
   const [recipientName, setRecipientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "online" | "upi">("cod");
+  const [upiUtr, setUpiUtr] = useState("");
+  const [upiQr, setUpiQr] = useState<string | null>(null);
   const [useWallet, setUseWallet] = useState(true);
   const [loading, setLoading] = useState(false);
   const [placed, setPlaced] = useState(false);
@@ -93,6 +104,27 @@ export default function CheckoutPage() {
     setRecipientName((v) => v || profile.name || "");
     setPhone((v) => v || profile.phone.replace(/\D/g, "").slice(-10));
   }, [profile]);
+
+  // Regenerate the UPI QR whenever the payable total changes while the
+  // direct-UPI option is selected. Encodes the standard upi://pay intent so
+  // any UPI app (GPay/PhonePe/Paytm/BHIM) can scan it with amount prefilled.
+  useEffect(() => {
+    if (paymentMethod !== "upi" || total <= 0) {
+      setUpiQr(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(buildUpiIntentUrl(total), { margin: 1, width: 220 })
+      .then((url) => {
+        if (!cancelled) setUpiQr(url);
+      })
+      .catch(() => {
+        if (!cancelled) setUpiQr(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentMethod, total]);
 
   // Redirect to cart if empty — only after hydration finishes, and not when we've
   // just placed an order (clearCart empties items right before we push to /track/{id})
@@ -124,6 +156,17 @@ export default function CheckoutPage() {
     }
 
     if (!finalName) return toast.error("Please enter recipient name");
+    if (paymentsPaused) return toast.error("Abhi payments paused hain — thodi der baad try karein");
+    if (
+      paymentMethod === "upi" &&
+      total > 0 &&
+      !UPI_UTR_RE.test(normalizeUtr(upiUtr))
+    ) {
+      return toast.error(
+        `Pehle ₹${total} UPI se ${UPI_ID} par pay karein, phir UTR / transaction reference (10–22 characters) yahan enter karein`,
+        { duration: 6000 },
+      );
+    }
     if (!finalAddress) return toast.error("Please enter delivery address");
     const phoneErr = validatePhone10(finalPhone);
     if (phoneErr) return toast.error(phoneErr);
@@ -298,6 +341,7 @@ export default function CheckoutPage() {
             razorpay_signature: paymentProof.razorpay_signature,
           }
         : undefined,
+      upi_utr: paymentMethod === "upi" ? upiUtr.trim().toUpperCase() : undefined,
     });
 
     if (error || !order) {
@@ -491,11 +535,103 @@ export default function CheckoutPage() {
               </div>
             </label>
           )}
-          {!codEnabled && !onlinePaymentEnabled && (
-            <p className="text-sm text-red-500 text-center py-3">
-              No payment methods enabled. Contact support.
+          {paymentsPaused && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3">
+              Abhi payments paused hain — koi payment method enabled nahi hai. Thodi der baad try karein ya support se contact karein.
             </p>
           )}
+          {!paymentsPaused && (
+          <label
+            className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-colors ${
+              paymentMethod === "upi"
+                ? "border-saffron bg-saffron-light"
+                : "border-gray-200 hover:border-gray-300"
+            }`}
+          >
+            <input
+              type="radio"
+              name="payment"
+              checked={paymentMethod === "upi"}
+              onChange={() => setPaymentMethod("upi")}
+              className="accent-saffron"
+            />
+            <Smartphone size={18} className="text-indian-green" />
+            <div>
+              <p className="text-sm font-medium text-brown">UPI — Direct Pay</p>
+              <p className="text-xs text-gray-500">
+                Pay {UPI_ID} · QR scan ya GPay/PhonePe se
+              </p>
+            </div>
+          </label>
+          )}
+
+          {paymentMethod === "upi" && (
+            <div className="mt-1 p-4 rounded-xl border-2 border-dashed border-saffron/50 bg-saffron-light/30">
+              {total > 0 ? (
+                <>
+                  <div className="flex flex-col items-center gap-2 mb-3">
+                    {upiQr && (
+                      // Data-URL QR from the `qrcode` lib — next/image adds nothing here
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={upiQr}
+                        alt={`UPI QR — pay ₹${total} to ${UPI_ID}`}
+                        width={180}
+                        height={180}
+                        className="rounded-lg border border-gray-200 bg-white p-1"
+                      />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-brown">{UPI_ID}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard
+                            .writeText(UPI_ID)
+                            .then(() => toast.success("UPI ID copied"))
+                            .catch(() => toast.error("Copy failed — likho: " + UPI_ID));
+                        }}
+                        className="p-1.5 rounded-lg bg-white border border-gray-200 text-saffron hover:border-saffron"
+                        aria-label="Copy UPI ID"
+                      >
+                        <Copy size={14} />
+                      </button>
+                    </div>
+                    <a
+                      href={buildUpiIntentUrl(total)}
+                      className="md:hidden inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indian-green text-white text-sm font-semibold"
+                    >
+                      <Smartphone size={16} />
+                      Pay ₹{total} — UPI app kholein
+                    </a>
+                  </div>
+                  <p className="text-xs text-gray-600 mb-2">
+                    Payment karne ke baad apne UPI app se{" "}
+                    <span className="font-semibold">UTR / transaction ID</span>{" "}
+                    (12 digit) yahan enter karein:
+                  </p>
+                  <Input
+                    placeholder="UTR / Transaction ID (e.g. 415012345678)"
+                    value={upiUtr}
+                    maxLength={22}
+                    onChange={(e) =>
+                      setUpiUtr(e.target.value.replace(/[^A-Za-z0-9]/g, ""))
+                    }
+                  />
+                  <p className="text-[11px] text-amber-700 mt-2">
+                    Order dispatch se pehle payment verify hoga. Galat UTR par
+                    order cancel ho sakta hai.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-gray-600">
+                  Total ₹0 hai — koi payment nahi chahiye, seedha order place
+                  karein.
+                </p>
+              )}
+            </div>
+          )}
+
         </div>
       </section>
 

@@ -53,21 +53,37 @@ function publicClient() {
   });
 }
 
-/** Active product by id, or null (also null in demo mode / bad id). */
-export async function getPublicProduct(
-  id: string,
-): Promise<PublicProduct | null> {
-  if (isDemoMode() || !UUID_RE.test(id)) return null;
+export interface PublicProductResult {
+  product: PublicProduct | null;
+  /** true when the lookup could not run (missing env, Supabase error) —
+   *  callers must NOT treat that as "no such product". */
+  failed: boolean;
+}
+
+/** Active product by id. `product` is null for demo mode / bad id / no row. */
+export async function getPublicProductResult(id: string): Promise<PublicProductResult> {
+  if (isDemoMode() || !UUID_RE.test(id)) return { product: null, failed: false };
   const supabase = publicClient();
-  if (!supabase) return null;
+  if (!supabase) {
+    console.error("[public-product] Supabase env missing on the server — product SEO disabled");
+    return { product: null, failed: true };
+  }
   const { data, error } = await supabase
     .from("products")
     .select(PUBLIC_PRODUCT_SELECT)
     .eq("id", id)
     .eq("active", true)
     .maybeSingle();
-  if (error || !data) return null;
-  return data as unknown as PublicProduct;
+  if (error) {
+    console.error("[public-product] lookup failed", id, error.message);
+    return { product: null, failed: true };
+  }
+  return { product: (data as unknown as PublicProduct) ?? null, failed: false };
+}
+
+/** Convenience wrapper — null on both "not found" and "failed". */
+export async function getPublicProduct(id: string): Promise<PublicProduct | null> {
+  return (await getPublicProductResult(id)).product;
 }
 
 /** Every active product's id + created_at (paginated past the 1000-row cap). */
@@ -86,7 +102,13 @@ export async function listPublicProductIds(): Promise<
       .eq("active", true)
       .order("created_at", { ascending: false })
       .range(from, from + pageSize - 1);
-    if (error || !data || data.length === 0) break;
+    if (error) {
+      // Throw rather than return a partial list: the sitemap route caches
+      // its result for an hour, and an empty/partial product list would be
+      // served to crawlers with no signal. A thrown error keeps the stale one.
+      throw new Error(`[public-product] sitemap product list failed: ${error.message}`);
+    }
+    if (!data || data.length === 0) break;
     all.push(...data);
     if (data.length < pageSize) break;
   }

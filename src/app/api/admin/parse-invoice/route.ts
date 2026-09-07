@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
-import ExcelJS from "exceljs";
+import type ExcelJS from "exceljs";
 import { requireRole } from "@/lib/supabase/auth-guard";
 import { resolveAnthropicKey } from "@/lib/server/secrets";
-import { extractPdfRows } from "@/lib/server/pdf-text";
+import { extractPdfRows, type PdfRow } from "@/lib/server/pdf-text";
 import { parseInvoiceRows } from "@/lib/server/invoice-text-parse";
 
 export const runtime = "nodejs";
@@ -190,27 +190,9 @@ async function extractWithClaude(file: File, apiKey: string): Promise<ParsedInvo
 }
 
 // ── Sheet path (XLSX / CSV) ───────────────────────────────────────────────
-type Col = "desc" | "qty" | "rate" | "tax" | "mrp" | "total" | "hsn" | "cgst" | "sgst" | "igst";
-
-const HEADER_HINTS: [Col, RegExp][] = [
-  ["hsn", /^hsn/i],
-  ["desc", /(product|item|description|particular|name|title)/i],
-  ["qty", /^(qty|quantity|units?|nos?\.?)$/i],
-  ["rate", /(unit ?price|unit ?cost|rate|basic|price|cost)/i],
-  ["tax", /(gst ?%|tax ?%|gst ?rate|tax ?rate|^gst$|^tax$)/i],
-  ["cgst", /cgst/i],
-  ["sgst", /sgst|utgst/i],
-  ["igst", /igst/i],
-  ["mrp", /^mrp/i],
-  ["total", /(amount|total|value|taxable)/i],
-];
-
-function classifyHeader(h: string): Col | null {
-  const s = h.trim();
-  if (!s) return null;
-  for (const [col, re] of HEADER_HINTS) if (re.test(s)) return col;
-  return null;
-}
+// The spreadsheet is turned into the same row shape the PDF path produces and
+// handed to the shared parser (header-aware column mapping, discount + GST
+// slab handling live in ONE place: src/lib/server/invoice-text-parse.ts).
 
 function cellText(v: ExcelJS.CellValue): string {
   if (v == null) return "";
@@ -252,7 +234,9 @@ async function rowsFromFile(file: File): Promise<string[][]> {
   if (/\.csv$/i.test(file.name) || file.type === "text/csv") {
     return rowsFromCsv(Buffer.from(buf).toString("utf8"));
   }
-  const wb = new ExcelJS.Workbook();
+  // ~1 MB library — only paid for on the xlsx branch, never on CSV/PDF/photo.
+  const { default: Excel } = await import("exceljs");
+  const wb = new Excel.Workbook();
   await wb.xlsx.load(buf);
   const sheet = wb.worksheets[0];
   if (!sheet) return [];
@@ -265,69 +249,25 @@ async function rowsFromFile(file: File): Promise<string[][]> {
   return rows;
 }
 
-function parseSheet(rows: string[][]): ParsedInvoice {
-  // Header row = first row where ≥2 columns classify (and one is desc/qty).
-  let headerIdx = -1;
-  let map: Partial<Record<Col, number>> = {};
-  for (let i = 0; i < Math.min(rows.length, 30); i++) {
-    const m: Partial<Record<Col, number>> = {};
-    rows[i].forEach((h, ci) => {
-      const col = classifyHeader(h);
-      if (col && m[col] === undefined) m[col] = ci;
-    });
-    const hits = Object.keys(m).length;
-    if (hits >= 2 && (m.desc !== undefined || m.qty !== undefined)) {
-      headerIdx = i;
-      map = m;
-      break;
-    }
-  }
-  if (headerIdx < 0 || map.desc === undefined) {
+function parseSheet(rows: string[][]): { invoice: ParsedInvoice; skipped: string[] } {
+  const pdfRows: PdfRow[] = rows
+    .map((cells, i) => {
+      const trimmed = cells.map((c) => (c ?? "").trim());
+      // Keep empty cells so column indexes stay aligned with the header row.
+      return { page: 1, y: -i, cells: trimmed, text: trimmed.filter(Boolean).join("  ") };
+    })
+    .filter((r) => r.text.length > 0);
+  const parsed = parseInvoiceRows(pdfRows);
+  if (parsed.lines.length === 0) {
     throw new Error(
-      "Couldn't find a header row. Expected columns like Product / Qty / Rate / GST% — export the bill from Flipkart Wholesale as Excel, or upload the PDF.",
+      "Couldn't find product rows. Expected a header like Product / Qty / Rate / GST% — export the bill from Flipkart Wholesale as Excel, or upload the PDF.",
     );
   }
-
-  const lines: ParsedInvoiceLine[] = [];
-  for (const r of rows.slice(headerIdx + 1)) {
-    const desc = (r[map.desc] ?? "").trim();
-    if (!desc || /^(sub ?total|total|grand|gst|tax|round|discount)/i.test(desc)) continue;
-    const qty = map.qty !== undefined ? num(r[map.qty]) : 1;
-    if (qty <= 0) continue;
-    const total = map.total !== undefined ? num(r[map.total]) : 0;
-    let rate = map.rate !== undefined ? num(r[map.rate]) : 0;
-    if (rate <= 0 && total > 0) rate = total / qty;
-    let tax = map.tax !== undefined ? num(r[map.tax]) : 0;
-    if (tax <= 0) {
-      // Sum CGST/SGST/IGST — could be % or ₹; treat > 28 as an amount.
-      const parts = (["cgst", "sgst", "igst"] as Col[])
-        .filter((c) => map[c] !== undefined)
-        .map((c) => num(r[map[c]!]));
-      const sum = parts.reduce((s, x) => s + x, 0);
-      const taxable = rate * qty;
-      tax = sum > 28 && taxable > 0 ? (sum / taxable) * 100 : sum;
-    }
-    lines.push({
-      description: desc,
-      quantity: Math.round(qty),
-      unit_cost: Math.round(rate * 100) / 100,
-      tax_rate: Math.round(tax * 100) / 100,
-      line_total: total > 0 ? total : null,
-      mrp: map.mrp !== undefined ? num(r[map.mrp]) || null : null,
-      hsn: map.hsn !== undefined ? (r[map.hsn] || "").trim() || null : null,
-    });
-    if (lines.length >= MAX_LINES) break;
-  }
-  if (lines.length === 0) throw new Error("No product rows found under the header row.");
-  return cleanInvoice({
-    supplier_name: "Flipkart Wholesale",
-    invoice_number: null,
-    invoice_date: null,
-    shipping_total: 0,
-    other_charges: 0,
-    grand_total: null,
-    lines,
-  });
+  const { skipped, ...rest } = parsed;
+  return {
+    invoice: cleanInvoice({ ...rest, supplier_name: rest.supplier_name ?? "Flipkart Wholesale" }),
+    skipped,
+  };
 }
 
 // ── Route ─────────────────────────────────────────────────────────────────
@@ -365,8 +305,8 @@ export async function POST(req: NextRequest) {
   try {
     if (isSheet) {
       const rows = await rowsFromFile(file);
-      const invoice = parseSheet(rows);
-      return NextResponse.json({ ok: true, source: "sheet", invoice });
+      const { invoice, skipped } = parseSheet(rows);
+      return NextResponse.json({ ok: true, source: "sheet", invoice, skipped });
     }
     if (!isAiReadable) {
       return NextResponse.json(

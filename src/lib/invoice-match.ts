@@ -64,11 +64,21 @@ function productIndex(p: Product) {
   return idx;
 }
 
+interface DescTokens {
+  words: string[];
+  sizes: Set<string>;
+}
+function tokenizeDescription(description: string): DescTokens {
+  return { words: words(description), sizes: sizeTokens(description) };
+}
+
 /** Score in [0, 1]-ish: word overlap, boosted/penalised by pack size. */
 export function scoreMatch(description: string, product: Product): number {
-  const dWords = words(description);
+  return scoreTokens(tokenizeDescription(description), product);
+}
+
+function scoreTokens({ words: dWords, sizes: dSizes }: DescTokens, product: Product): number {
   if (dWords.length === 0) return 0;
-  const dSizes = sizeTokens(description);
   const { words: pWords, sizes: pSizes } = productIndex(product);
   if (pWords.size === 0) return 0;
 
@@ -98,10 +108,12 @@ export function scoreMatch(description: string, product: Product): number {
 }
 
 export function matchLine(description: string, products: Product[], limit = 5): LineMatch {
+  // Tokenise the bill line once, not once per catalogue product.
+  const tokens = tokenizeDescription(description);
   const scored: { product: Product; score: number }[] = [];
   for (const p of products) {
     if (p.active === false) continue;
-    const s = scoreMatch(description, p);
+    const s = scoreTokens(tokens, p);
     if (s > 0.2) scored.push({ product: p, score: s });
   }
   scored.sort((a, b) => b.score - a.score);
@@ -123,8 +135,4 @@ export function matchLine(description: string, products: Product[], limit = 5): 
     score: best.score,
     candidates,
   };
-}
-
-export function matchLines(descriptions: string[], products: Product[]): LineMatch[] {
-  return descriptions.map((d) => matchLine(d, products));
 }

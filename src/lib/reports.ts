@@ -4,10 +4,9 @@
  * exporter (report-export.ts) turns the rows into sheets.
  */
 
-import { isRealisedOrder, orderPnl } from "@/lib/pnl";
+import { isRealisedOrder, orderPnl, r2 } from "@/lib/pnl";
 import type { Order, Product, PurchaseOrder } from "@/types";
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
 
 // ── Sales register ────────────────────────────────────────────────────────
 export interface SalesRow {

@@ -86,13 +86,9 @@ function splitRow(row: PdfRow): { desc: string; nums: string[]; hsn: string | nu
         continue;
       }
       nums.push(tt);
-    } else if (nums.length === 0) {
-      textParts.push(tt);
-    } else if (tt.length <= 6) {
-      // Short text after numbers is a unit label ("PCS", "KG") — keep it.
-      textParts.push(tt);
     } else {
-      // Long text after numbers means this isn't a clean product row.
+      // Text after the numbers (a unit label like "PCS"/"KG") stays part of
+      // the description; assignNumbers decides whether the row is a product.
       textParts.push(tt);
     }
   }
@@ -159,15 +155,17 @@ function findLabelled(rows: PdfRow[], label: RegExp): string | null {
 
 function parseDate(s: string | null): string | null {
   if (!s) return null;
-  const m = s.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  // ISO first — the dd/mm/yy pattern below would otherwise match INSIDE
+  // "2026-08-15" (as 26-08-15) and produce 2015-08-26.
+  const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return iso[0];
+  const m = s.match(/(?<!\d)(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})(?!\d)/);
   if (m) {
     const d = m[1].padStart(2, "0");
     const mo = m[2].padStart(2, "0");
     const y = m[3].length === 2 ? `20${m[3]}` : m[3];
     return `${y}-${mo}-${d}`;
   }
-  const iso = s.match(/(\d{4})-(\d{2})-(\d{2})/);
-  if (iso) return iso[0];
   const mon = s.match(/(\d{1,2})\s*([A-Za-z]{3})[a-z]*\s*(\d{4})/);
   if (mon) {
     const months = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];

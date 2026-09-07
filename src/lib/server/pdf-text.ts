@@ -10,7 +10,6 @@
  * key is configured) or asks for the Excel export.
  */
 
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
 export interface PdfRow {
@@ -25,6 +24,8 @@ const ROW_TOLERANCE = 3; // pt — runs whose baselines differ by less are one r
 const CELL_GAP = 12; // pt — a horizontal gap wider than this starts a new cell
 
 export async function extractPdfRows(data: Uint8Array): Promise<PdfRow[]> {
+  // ~1.5 MB library — loaded on first PDF only, not on every cold start.
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const task = pdfjs.getDocument({
     data,
     useSystemFonts: true,
