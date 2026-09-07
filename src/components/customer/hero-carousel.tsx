@@ -137,30 +137,35 @@ function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
       <Link
         href={banner.ctaHref}
         aria-label={`${banner.title} — ${banner.ctaLabel}`}
-        className="relative shrink-0 w-full snap-center rounded-2xl overflow-hidden bg-saffron-light min-h-[150px] sm:min-h-[160px] md:min-h-[200px]"
+        className="relative shrink-0 w-full snap-center rounded-2xl overflow-hidden bg-saffron-light"
       >
-        {/* Fills whatever height the tallest sibling slide sets (flex stretch),
-            cropping from the right so the logo + headline on the left survive. */}
-        <picture>
-          <source media="(min-width: 768px)" srcSet={banner.fullImage.desktop} />
-          {/* Art-directed <picture> (different crop per breakpoint) — next/image
-              can't switch sources, and these are local pre-sized WebPs. */}
-          <img
-            src={banner.fullImage.mobile}
-            alt={`${banner.title} — ${banner.subtitle}`}
-            loading={eager ? "eager" : "lazy"}
-            className="absolute inset-0 w-full h-full object-cover object-left md:object-center"
-          />
-        </picture>
+        {/* The box is at least as tall as the sibling slides (min-h-full) and,
+            from md up, at least the poster's own 16:5 aspect — so the whole
+            artwork shows on tablets/desktops and the carousel grows to fit.
+            The image covers the box anchored left, so on phones (where the
+            box is shorter than 16:5) only the right-hand packs get cropped. */}
+        <div className="relative w-full min-h-full md:aspect-[16/5]">
+          <picture>
+            <source media="(min-width: 768px)" srcSet={banner.fullImage.desktop} />
+            {/* Art-directed <picture> (different crop per breakpoint) — next/image
+                can't switch sources, and these are local pre-sized WebPs. */}
+            <img
+              src={banner.fullImage.mobile}
+              alt={`${banner.title} — ${banner.subtitle}`}
+              loading={eager ? "eager" : "lazy"}
+              className="absolute inset-0 w-full h-full object-cover object-left"
+            />
+          </picture>
+        </div>
       </Link>
     );
   }
   return (
     <Link
       href={banner.ctaHref}
-      className={`relative shrink-0 w-full snap-center bg-gradient-to-br ${banner.gradient} text-white rounded-2xl overflow-hidden`}
+      className={`relative shrink-0 w-full snap-center self-stretch bg-gradient-to-br ${banner.gradient} text-white rounded-2xl overflow-hidden`}
     >
-      <div className="px-4 py-5 sm:px-5 sm:py-6 md:px-8 md:py-10 min-h-[150px] sm:min-h-[160px] md:min-h-[200px] flex items-center justify-between gap-2 sm:gap-4">
+      <div className="h-full px-4 py-5 sm:px-5 sm:py-6 md:px-8 md:py-10 min-h-[150px] sm:min-h-[160px] md:min-h-[200px] flex items-center justify-between gap-2 sm:gap-4">
         <div className="max-w-[62%] sm:max-w-[65%] md:max-w-md min-w-0 shrink">
           <span className="inline-flex items-center gap-1 bg-white/20 text-white text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md tracking-wide">
             {pickIcon(banner.badge)}
