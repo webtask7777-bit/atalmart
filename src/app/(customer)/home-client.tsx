@@ -15,6 +15,7 @@ import {
   isAgeRestricted,
 } from "@/lib/store/age-gate";
 import { HeroCarousel } from "@/components/customer/hero-carousel";
+import { PopatHero, PopatStaticBanner } from "@/components/popat";
 import { ProductRail } from "@/components/customer/product-rail";
 import { CartBar } from "@/components/customer/cart-bar";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
@@ -353,6 +354,9 @@ function HomeContent() {
                   onSelect={setSelectedSub}
                 />
               )}
+              {/^popat/i.test(debouncedSearch.trim()) && viewProducts.length > 0 && (
+                <PopatStaticBanner variant="tea-time" className="mb-4" alt="Popat Namkeen — tea-time favourites" />
+              )}
               {viewProducts.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
@@ -397,6 +401,9 @@ function HomeContent() {
             />
           )}
 
+          {/* Popat zone — the brand's responsive live-text hero (5 campaigns,
+              art-directed for desktop/tablet/mobile) with its rail right below. */}
+          <PopatHero className="mt-6" />
           {rails.popat.length > 0 && (
             <ProductRail
               title="Popat Namkeen"

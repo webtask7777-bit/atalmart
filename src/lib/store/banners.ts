@@ -80,14 +80,13 @@ const SEED: Banner[] = [
     subtitle: "Popat Namkeen ki poori range — sev, gathiya, mixture, bhujiya. Ab Atalmart par.",
     ctaLabel: "Shop Popat",
     ctaHref: "/?search=popat",
-    gradient: "from-saffron via-orange-500 to-red-500",
+    gradient: "from-red-700 via-orange-600 to-amber-500",
     illo: "🥨",
-    // Brand-supplied artwork (copy baked in). Swap for
-    // popat-02-tea-time-*.webp to rotate the creative.
-    fullImage: {
-      desktop: "/banners/popat-01-full-range-1920x600.webp",
-      mobile: "/banners/popat-01-full-range-1200x400.webp",
-    },
+    // Same compact slide format as the other banners (consistent height on
+    // every screen). The full Popat brand hero — live text, art-directed for
+    // desktop/tablet/mobile — is the PopatHero section further down the home
+    // page (src/components/popat).
+    imgSrc: "/popat/products/dal-moth.webp",
     enabled: true,
     sortOrder: 5,
   },
@@ -141,9 +140,11 @@ export const useBannerStore = create<BannerStore>()(
       // v1: b4 pointed at demo id /product/p31 with a made-up ₹265 price.
       // v2: banner art moved from 700 KB PNGs to 50 KB WebPs (.png → .webp).
       // v3: Popat Namkeen full-image banner (b5) added.
+      // v4: b5 back to the compact slide format (art now lives in PopatHero);
+      //     the /banners/popat-*.webp files it pointed at were removed.
       // Bumping the version discards that stale persisted copy for existing
       // visitors so everyone gets the corrected seed.
-      version: 3,
+      version: 4,
       migrate: () => ({ banners: SEED }),
     },
   ),
