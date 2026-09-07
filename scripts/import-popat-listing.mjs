@@ -118,6 +118,16 @@ if (!cat) throw new Error(`${CATEGORY} category missing`);
 const existing = await getJson(`products?select=id,name&name=ilike.Popat%25`);
 const byName = new Map(existing.map((p) => [p.name.toLowerCase(), p]));
 
+/** True when the corners are transparent or near-white (no baked checkerboard). */
+async function hasCleanBackground(file) {
+  const img = sharp(file);
+  const m = await img.metadata();
+  if (m.hasAlpha) return true;
+  const { data } = await img.raw().toBuffer({ resolveWithObject: true });
+  const px = (x, y) => { const i = (y * m.width + x) * m.channels; return [data[i], data[i + 1], data[i + 2]]; };
+  return [px(2, 2), px(14, 14), px(m.width - 3, m.height - 3)].every((c) => c.every((v) => v >= 245));
+}
+
 /** Convert any source to a ≤1200px WebP on white; returns buffer + sha8. */
 async function toWebp(file) {
   const buf = await sharp(file).flatten({ background: "#ffffff" }).resize(1200, 1200, { fit: "inside", withoutEnlargement: true }).webp({ quality: 88 }).toBuffer();
@@ -157,13 +167,20 @@ for (const [slug, meta] of Object.entries(PRODUCTS)) {
     created++;
   } else { console.log(`~ UPDATE ${name}`); updated++; }
 
-  // Images: studio packshot → fop; creative + extra packshots + brand photo → gallery.
+  // Images: the listing creative (true alpha, 2048²) is the card image; the
+  // packshots only join the gallery when their background is clean white —
+  // several have a baked-in checkerboard, which looks broken on the site.
   const a = ASSETS[slug];
   const sitePhoto = `/tmp/popat/img/${slug}.png`;
-  const fopFile = a ? join(PACK, a.fop) : sitePhoto;
-  const galleryFiles = a
-    ? [join(PACK, a.creative), ...(a.extra ?? []).map((e) => join(PACK, e)), sitePhoto]
-    : [];
+  const fopFile = a ? join(PACK, a.creative) : sitePhoto;
+  const galleryFiles = [];
+  if (a) {
+    for (const f of [a.fop, ...(a.extra ?? [])].map((e) => join(PACK, e))) {
+      if (await hasCleanBackground(f)) galleryFiles.push(f);
+      else console.log(`    (skipping ${f.split("/").pop()} — checkerboard/grey background)`);
+    }
+    galleryFiles.push(sitePhoto);
+  }
   for (const f of [fopFile, ...galleryFiles]) if (!existsSync(f)) throw new Error(`missing ${f}`);
   const image_url = await upload(id, "fop", fopFile); uploaded++;
   const image_urls = [];
