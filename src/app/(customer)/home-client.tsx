@@ -375,12 +375,36 @@ function HomeContent() {
         <>
           {user && <BuyAgainRail products={products} />}
 
+          {rails.freshVeg.length > 0 && (
+            <ProductRail
+              title="Fresh sabzi & fruits"
+              subtitle="Roz subah ki taazi sabzi — weight ke hisaab se"
+              emoji="🥬"
+              products={rails.freshVeg}
+              onSeeAll={() => setSelectedCategory("Fruits & Vegetables")}
+              seeAllLabel="All sabzi"
+              accent="green"
+            />
+          )}
+
           {rails.topDeals.length > 0 && (
             <ProductRail
               title="Top deals today"
               subtitle="Biggest discounts, hand-picked for you"
               emoji="🔥"
               products={rails.topDeals}
+              accent="saffron"
+            />
+          )}
+
+          {rails.popat.length > 0 && (
+            <ProductRail
+              title="Popat Namkeen"
+              subtitle="Chhattisgarh ka apna crunchy brand — sev, gathiya, mixture"
+              emoji="🥨"
+              products={rails.popat}
+              seeAllHref="/?search=popat"
+              seeAllLabel="All Popat"
               accent="saffron"
             />
           )}
@@ -593,7 +617,16 @@ function buildRails(products: Product[], categories: Category[]) {
 
   const snacksAll = byCat(["Snacks & Munchies", "Bakery & Biscuits"]);
 
+  // Local-first rails: fresh produce (daily need) and Popat, Chhattisgarh's
+  // own namkeen brand — both lead the page ahead of national-brand deals.
+  const freshVeg = byCat(["Fruits & Vegetables"]).slice(0, 12);
+  const popat = shuffleForGrid(
+    products.filter((p) => inStock(p) && /^popat\b/i.test(p.name)),
+  ).slice(0, 12);
+
   return {
+    freshVeg,
+    popat,
     topDeals,
     dailyEssentials: byCat([
       "Dairy",
