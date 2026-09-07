@@ -131,6 +131,28 @@ export function HeroCarousel() {
 }
 
 function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
+  // Brand artwork with the copy already in the image: render it edge to edge.
+  if (banner.fullImage) {
+    return (
+      <Link
+        href={banner.ctaHref}
+        aria-label={`${banner.title} — ${banner.ctaLabel}`}
+        className="relative shrink-0 w-full snap-center rounded-2xl overflow-hidden bg-saffron-light"
+      >
+        <picture>
+          <source media="(min-width: 768px)" srcSet={banner.fullImage.desktop} />
+          {/* Art-directed <picture> (different crop per breakpoint) — next/image
+              can't switch sources, and these are local pre-sized WebPs. */}
+          <img
+            src={banner.fullImage.mobile}
+            alt={`${banner.title} — ${banner.subtitle}`}
+            loading={eager ? "eager" : "lazy"}
+            className="block w-full h-auto min-h-[150px] sm:min-h-[160px] md:min-h-[200px] object-cover"
+          />
+        </picture>
+      </Link>
+    );
+  }
   return (
     <Link
       href={banner.ctaHref}

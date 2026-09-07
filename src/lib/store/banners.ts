@@ -11,6 +11,10 @@ export type Banner = {
   gradient: string; // e.g. "from-saffron via-orange-500 to-red-500"
   illo: string; // emoji
   imgSrc?: string; // optional real image, takes priority over illo
+  /** Full-bleed artwork with the copy baked in (brand banners). When set, the
+   *  slide renders ONLY the image (desktop 1920×600, mobile 1200×400) and the
+   *  text fields above are used for alt/aria only. */
+  fullImage?: { desktop: string; mobile: string };
   enabled: boolean;
   sortOrder: number;
 };
@@ -69,6 +73,24 @@ const SEED: Banner[] = [
     enabled: true,
     sortOrder: 4,
   },
+  {
+    id: "b5",
+    badge: "POPAT NAMKEEN",
+    title: "Har Chai Ka Crunchy Saathi",
+    subtitle: "Popat Namkeen ki poori range — sev, gathiya, mixture, bhujiya. Ab Atalmart par.",
+    ctaLabel: "Shop Popat",
+    ctaHref: "/?search=popat",
+    gradient: "from-saffron via-orange-500 to-red-500",
+    illo: "🥨",
+    // Brand-supplied artwork (copy baked in). Swap for
+    // popat-02-tea-time-*.webp to rotate the creative.
+    fullImage: {
+      desktop: "/banners/popat-01-full-range-1920x600.webp",
+      mobile: "/banners/popat-01-full-range-1200x400.webp",
+    },
+    enabled: true,
+    sortOrder: 5,
+  },
 ];
 
 interface BannerStore {
@@ -118,9 +140,10 @@ export const useBannerStore = create<BannerStore>()(
       name: "atalmart-banners",
       // v1: b4 pointed at demo id /product/p31 with a made-up ₹265 price.
       // v2: banner art moved from 700 KB PNGs to 50 KB WebPs (.png → .webp).
+      // v3: Popat Namkeen full-image banner (b5) added.
       // Bumping the version discards that stale persisted copy for existing
       // visitors so everyone gets the corrected seed.
-      version: 2,
+      version: 3,
       migrate: () => ({ banners: SEED }),
     },
   ),
