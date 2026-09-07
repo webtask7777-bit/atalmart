@@ -137,8 +137,10 @@ function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
       <Link
         href={banner.ctaHref}
         aria-label={`${banner.title} — ${banner.ctaLabel}`}
-        className="relative shrink-0 w-full snap-center rounded-2xl overflow-hidden bg-saffron-light"
+        className="relative shrink-0 w-full snap-center rounded-2xl overflow-hidden bg-saffron-light min-h-[150px] sm:min-h-[160px] md:min-h-[200px]"
       >
+        {/* Fills whatever height the tallest sibling slide sets (flex stretch),
+            cropping from the right so the logo + headline on the left survive. */}
         <picture>
           <source media="(min-width: 768px)" srcSet={banner.fullImage.desktop} />
           {/* Art-directed <picture> (different crop per breakpoint) — next/image
@@ -147,7 +149,7 @@ function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
             src={banner.fullImage.mobile}
             alt={`${banner.title} — ${banner.subtitle}`}
             loading={eager ? "eager" : "lazy"}
-            className="block w-full h-[150px] sm:h-[160px] md:h-auto md:min-h-[200px] object-cover object-left md:object-center"
+            className="absolute inset-0 w-full h-full object-cover object-left md:object-center"
           />
         </picture>
       </Link>
