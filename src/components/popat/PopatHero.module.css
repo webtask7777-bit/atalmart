@@ -585,13 +585,25 @@
     line-height: 1.45;
   }
 
+  /* Stack the CTA and the veg badge on one centred axis instead of pushing
+     them to opposite sides of the row. */
   .actions {
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
+    gap: 12px;
     margin-top: 18px;
   }
 
   .cta {
     min-height: 48px;
+    width: min(100%, 300px);
+    justify-content: center;
+    padding-right: 18px;
+  }
+
+  .cta svg {
+    margin-left: auto;
   }
 
   .microBadge {
