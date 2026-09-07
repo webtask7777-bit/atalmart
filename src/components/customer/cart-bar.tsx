@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ShoppingBag, ArrowRight, Truck } from "lucide-react";
+import { ShoppingBag, ArrowRight } from "lucide-react";
 import { useCartStore } from "@/lib/store/cart";
 import { useSettings } from "@/lib/store/settings";
 
@@ -23,56 +23,48 @@ export function CartBar() {
   const isFree = remaining === 0;
 
   return (
-    <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-40 p-3 md:p-4 pointer-events-none">
-      <div className="max-w-lg mx-auto pointer-events-auto">
-        {/* Free-delivery progress bar */}
-        <div className="bg-white rounded-t-2xl border border-gray-200 border-b-0 px-4 py-2">
-          <div className="flex items-center gap-2 text-[11px]">
-            <Truck size={12} className={isFree ? "text-indian-green" : "text-saffron"} />
-            <span className="text-brown font-medium">
-              {isFree ? (
-                <span className="text-indian-green">
-                  Yay! You unlocked <b>FREE delivery</b> 🎉
-                </span>
-              ) : (
-                <>
-                  Add <b>₹{remaining}</b> more for{" "}
-                  <span className="text-indian-green font-bold">FREE delivery</span>
-                </>
-              )}
-            </span>
-          </div>
-          <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full ${isFree ? "bg-indian-green" : "bg-saffron"} transition-all duration-300`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+    // One compact row (Blinkit/Zepto style): thin free-delivery progress line
+    // on top, "n items · ₹total" + hint on the left, "View cart" on the right.
+    // Sits flush above the mobile bottom nav; ~55px instead of the old ~125px.
+    <div className="fixed bottom-12 md:bottom-0 left-0 right-0 z-40 px-3 pb-2 md:p-4 pointer-events-none">
+      <Link
+        href="/cart"
+        className="block max-w-lg mx-auto pointer-events-auto bg-saffron text-white rounded-xl shadow-lg overflow-hidden hover:bg-saffron-dark transition-colors"
+      >
+        <div className="h-[3px] bg-white/25" aria-hidden="true">
+          <div
+            className="h-full bg-white transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          />
         </div>
-
-        {/* Cart CTA */}
-        <Link
-          href="/cart"
-          className="flex items-center justify-between bg-saffron text-white rounded-b-2xl px-5 py-3.5 shadow-lg hover:bg-saffron-dark transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <ShoppingBag size={22} />
+        <div className="flex items-center justify-between gap-3 px-4 py-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="relative shrink-0">
+              <ShoppingBag size={20} />
               <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-white text-saffron text-[9px] font-bold rounded-full flex items-center justify-center">
                 {itemCount}
               </span>
             </div>
-            <span className="text-sm font-medium">
-              {itemCount} item{itemCount > 1 ? "s" : ""}
-            </span>
+            <div className="min-w-0 leading-tight">
+              <div className="text-sm font-bold">
+                {itemCount} item{itemCount > 1 ? "s" : ""} · ₹{total}
+              </div>
+              <div className="text-[11px] opacity-90 truncate">
+                {isFree ? (
+                  <>FREE delivery unlocked 🎉</>
+                ) : (
+                  <>
+                    Add ₹{remaining} more for <b>FREE delivery</b>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-bold">₹{total}</span>
-            <ArrowRight size={18} />
-          </div>
-        </Link>
-      </div>
+          <span className="flex items-center gap-1 text-sm font-bold shrink-0">
+            View cart <ArrowRight size={16} />
+          </span>
+        </div>
+      </Link>
     </div>
   );
 }

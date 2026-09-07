@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin, ShoppingCart, User, Search, ChevronDown } from "lucide-react";
@@ -8,6 +8,7 @@ import { useCartStore } from "@/lib/store/cart";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { PINCODE_AREA_LABELS, isServiceablePincode } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
+import { BusyStrip } from "@/components/customer/store-status-board";
 import {
   useUserPincodeStore,
   useUserPincodeHydrated,
@@ -98,8 +99,24 @@ export function Header({ onSearch }: HeaderProps) {
     }
   };
 
+  // Publish the rendered header height so sticky elements below it (the
+  // home category strip) pin exactly under it on every breakpoint, with or
+  // without the busy strip — a fixed `top-16` was wrong on phones.
+  const headerRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const publish = () =>
+      document.documentElement.style.setProperty("--header-h", `${el.offsetHeight}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-100">
+    <header ref={headerRef} className="sticky top-0 z-50 bg-white border-b border-gray-100">
+      <BusyStrip />
       <div className="max-w-7xl mx-auto px-3 md:px-4">
         <div className="flex items-center gap-2 md:gap-6 h-12 md:h-16">
           {/* Logo */}
@@ -218,14 +235,14 @@ export function Header({ onSearch }: HeaderProps) {
         </div>
 
         {/* Mobile: slim search row */}
-        <div className="md:hidden pb-2">
+        <div className="md:hidden pb-1.5">
           <form onSubmit={handleSearchSubmit}>
             <div className="relative">
               <Search
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
               />
-              <SearchInput value={searchInput} onChange={handleSearchChange} className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors" />
+              <SearchInput value={searchInput} onChange={handleSearchChange} className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 text-[12px] placeholder:text-gray-500 focus:outline-none focus:border-saffron focus:bg-white transition-colors" />
             </div>
           </form>
         </div>

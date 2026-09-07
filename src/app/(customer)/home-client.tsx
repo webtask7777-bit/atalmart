@@ -104,7 +104,7 @@ function HomeStaticShell() {
   const noop = () => {};
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
-      <div className="sticky top-16 z-30 -mx-4 px-4 bg-white border-b border-gray-100">
+      <div className="sticky z-30 -mx-4 px-4 bg-white border-b border-gray-100" style={{ top: "var(--header-h, 64px)" }}>
         <CategoryBar selected={null} onSelect={noop} />
       </div>
       <QuickSearches />
@@ -271,7 +271,7 @@ function HomeContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
       {/* Sticky category strip (compact) */}
-      <div className="sticky top-16 z-30 -mx-4 px-4 bg-white border-b border-gray-100">
+      <div className="sticky z-30 -mx-4 px-4 bg-white border-b border-gray-100" style={{ top: "var(--header-h, 64px)" }}>
         <CategoryBar
           selected={selectedCategory}
           onSelect={setSelectedCategory}

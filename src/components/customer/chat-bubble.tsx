@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { MessageCircle, X, Send, Sparkles, Loader2 } from "lucide-react";
 import { useSettings } from "@/lib/store/settings";
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/lib/store/cart";
 
 interface ChatMessage {
@@ -30,6 +31,12 @@ export function ChatBubble() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const settings = useSettings();
   const cartItems = useCartStore((s) => s.items);
+  const pathname = usePathname();
+  // The compact cart bar sits above the mobile bottom nav whenever the cart
+  // has items (except on /cart and /checkout); lift the launcher above it so
+  // it doesn't cover "View cart".
+  const cartBarShown =
+    cartItems.length > 0 && !pathname.startsWith("/cart") && !pathname.startsWith("/checkout");
 
   // Auto-hide on scroll-down, reveal on scroll-up or rest.
   useEffect(() => {
@@ -215,7 +222,7 @@ export function ChatBubble() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open chat support"
-          className={`fixed bottom-16 right-3 md:bottom-6 md:right-6 z-40 w-11 h-11 md:w-12 md:h-12 rounded-full bg-saffron text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center group ${
+          className={`fixed ${cartBarShown ? "bottom-[7.25rem]" : "bottom-16"} right-3 md:bottom-6 md:right-6 z-40 w-11 h-11 md:w-12 md:h-12 rounded-full bg-saffron text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center group ${
             hidden ? "translate-y-24 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
           }`}
         >
