@@ -538,14 +538,16 @@
 }
 
 @media (max-width: 680px) {
+  /* Stacked layout: let the content set the height. A fixed min-height here
+     left a blank band between the CTA and the packshots on phones. */
   .hero {
-    min-height: clamp(650px, 178vw, 760px);
+    min-height: 0;
     border-radius: 22px;
   }
 
   .shell {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(280px, 1fr);
+    grid-template-rows: auto auto;
     gap: 4px;
     padding: 24px 20px 58px;
   }
@@ -597,8 +599,12 @@
   }
 
   .products {
-    min-height: 290px;
+    /* Just tall enough for the biggest pack (43% of the row width) plus
+       its glow — the packs are bottom-anchored inside this box. */
+    min-height: clamp(150px, 44vw, 200px);
     margin-inline: -12px;
+    /* keep the pack shadows clear of the arrows/dots below */
+    margin-bottom: 10px;
   }
 
   .product1 {
@@ -651,10 +657,6 @@
 }
 
 @media (max-width: 390px) {
-  .hero {
-    min-height: 700px;
-  }
-
   .shell {
     padding-inline: 16px;
   }
