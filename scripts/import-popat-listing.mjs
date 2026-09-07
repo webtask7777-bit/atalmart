@@ -8,7 +8,6 @@
  * Sources
  *   • /tmp/popat/products-ld.json  — name / pack / price / image scraped from
  *     popatnamkeen.com product pages (schema.org JSON-LD), see session notes.
- *   • /tmp/popat/img/<slug>.png    — the brand's own product photo (fallback).
  *   • ~/Downloads/popat-complete-source-included-v1 — 11 SKUs have studio
  *     packshot cutouts (1254²) + listing creatives (2048²); those become the
  *     card image and first gallery image.
@@ -170,23 +169,24 @@ for (const [slug, meta] of Object.entries(PRODUCTS)) {
   // Images: the listing creative (true alpha, 2048²) is the card image; the
   // packshots only join the gallery when their background is clean white —
   // several have a baked-in checkerboard, which looks broken on the site.
+  // Brand-website photos (444 px, on a shelf) are NOT used — the owner wants
+  // only studio assets; SKUs without one stay image-less until photos arrive.
   const a = ASSETS[slug];
-  const sitePhoto = `/tmp/popat/img/${slug}.png`;
-  const fopFile = a ? join(PACK, a.creative) : sitePhoto;
+  const fopFile = a ? join(PACK, a.creative) : null;
   const galleryFiles = [];
   if (a) {
     for (const f of [a.fop, ...(a.extra ?? [])].map((e) => join(PACK, e))) {
       if (await hasCleanBackground(f)) galleryFiles.push(f);
       else console.log(`    (skipping ${f.split("/").pop()} — checkerboard/grey background)`);
     }
-    galleryFiles.push(sitePhoto);
   }
-  for (const f of [fopFile, ...galleryFiles]) if (!existsSync(f)) throw new Error(`missing ${f}`);
-  const image_url = await upload(id, "fop", fopFile); uploaded++;
+  for (const f of [fopFile, ...galleryFiles]) if (f && !existsSync(f)) throw new Error(`missing ${f}`);
+  const image_url = fopFile ? await upload(id, "fop", fopFile) : null;
+  if (fopFile) uploaded++;
   const image_urls = [];
   for (const [i, f] of galleryFiles.entries()) { image_urls.push(await upload(id, `g${i + 1}`, f)); uploaded++; }
 
-  console.log(`    ${a ? "studio packshot" : "brand photo"} + ${image_urls.length} gallery · ${SUBCATEGORY} · ${pack} · ₹${price}`);
+  console.log(`    ${a ? "studio creative" : "NO IMAGE yet"} + ${image_urls.length} gallery · ${SUBCATEGORY} · ${pack} · ₹${price}`);
   if (APPLY) {
     const r = await fetch(`${URL}/rest/v1/products?id=eq.${id}`, { method: "PATCH", headers: { ...H, "Content-Type": "application/json", Prefer: "return=minimal" }, body: JSON.stringify({ name, name_hi: meta.hi, unit: pack, price, mrp: price, description, key_features, subcategory: SUBCATEGORY, image_url, image_urls, active: true, ...COMMON }) });
     if (!r.ok) throw new Error(`patch ${name}: ${r.status} ${await r.text()}`);

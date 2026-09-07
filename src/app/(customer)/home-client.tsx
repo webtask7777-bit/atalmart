@@ -621,7 +621,7 @@ function buildRails(products: Product[], categories: Category[]) {
   // own namkeen brand — both lead the page ahead of national-brand deals.
   const freshVeg = byCat(["Fruits & Vegetables"]).slice(0, 12);
   const popat = shuffleForGrid(
-    products.filter((p) => inStock(p) && /^popat\b/i.test(p.name)),
+    products.filter((p) => inStock(p) && !!p.image_url && /^popat\b/i.test(p.name)),
   ).slice(0, 12);
 
   return {
