@@ -142,6 +142,10 @@ export default function RootLayout({
     <html
       lang="en-IN"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // globals.css sets scroll-behavior: smooth for in-page jumps. Next 16
+      // no longer overrides that during route changes unless this attribute
+      // is present — without it every navigation would animate scroll-to-top.
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-white text-brown" suppressHydrationWarning>

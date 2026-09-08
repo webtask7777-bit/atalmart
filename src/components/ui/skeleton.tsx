@@ -14,13 +14,14 @@ export function ProductCardSkeleton() {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
       <Skeleton className="aspect-square rounded-none" />
-      <div className="p-3 space-y-2">
-        <Skeleton className="h-3 w-16" />
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-3/4" />
-        <div className="flex justify-between items-center pt-1">
-          <Skeleton className="h-5 w-12" />
-          <Skeleton className="h-8 w-14 rounded-lg" />
+      {/* Same rhythm as the compact ProductCard so nothing shifts on load */}
+      <div className="px-2.5 pt-2 pb-2.5 space-y-1.5">
+        <Skeleton className="h-3.5 w-full" />
+        <Skeleton className="h-3.5 w-3/4" />
+        <Skeleton className="h-3 w-12" />
+        <div className="flex justify-between items-center pt-1.5">
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-7 w-14 rounded-lg" />
         </div>
       </div>
     </div>

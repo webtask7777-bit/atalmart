@@ -44,7 +44,7 @@ export function BrandRail({ limit = 24, brands = SHOPPABLE_BRANDS }: BrandRailPr
       <div className="relative">
         <RailArrow dir="left" visible={canLeft} onClick={() => scrollByPage("left")} />
         <RailArrow dir="right" visible={canRight} onClick={() => scrollByPage("right")} />
-        <ul ref={railRef} className="rail-x flex gap-3 -mx-4 px-4 scroll-pl-4 pb-1 list-none m-0">
+        <ul ref={railRef} className="rail-x flex gap-3 -mx-4 px-4 scroll-pl-4 pb-2 pt-1 list-none m-0">
         {list.map((b) => (
           <li key={b.slug} className="shrink-0 snap-start w-[88px] md:w-[104px]">
             <Link

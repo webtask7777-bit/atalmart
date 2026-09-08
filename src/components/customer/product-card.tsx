@@ -172,12 +172,12 @@ export function ProductCard({ product }: ProductCardProps) {
                 stop(e);
                 addItem(product, defaultVariant);
               }}
-              className="px-3.5 py-1 border border-indian-green text-indian-green text-[12px] font-bold rounded-lg hover:bg-green-light transition-colors uppercase tracking-wide shrink-0"
+              className="min-h-[28px] px-3.5 py-1 border border-indian-green text-indian-green text-[12px] font-bold rounded-lg hover:bg-green-light transition-colors uppercase tracking-wide shrink-0"
             >
               ADD
             </button>
           ) : (
-            <div className="flex items-center bg-indian-green rounded-lg overflow-hidden shadow-sm shrink-0">
+            <div className="flex items-center min-h-[28px] bg-indian-green rounded-lg overflow-hidden shadow-sm shrink-0">
               <button
                 onClick={(e) => {
                   stop(e);
