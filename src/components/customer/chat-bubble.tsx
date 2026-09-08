@@ -222,7 +222,7 @@ export function ChatBubble() {
         <button
           onClick={() => setOpen(true)}
           aria-label="Open chat support"
-          className={`fixed ${cartBarShown ? "bottom-[7.25rem]" : "bottom-16"} right-3 md:bottom-6 md:right-6 z-40 w-11 h-11 md:w-12 md:h-12 rounded-full bg-saffron text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center group ${
+          className={`fixed ${cartBarShown ? "bottom-[calc(7.25rem+env(safe-area-inset-bottom,0px))]" : "bottom-[calc(4rem+env(safe-area-inset-bottom,0px))]"} right-3 md:bottom-6 md:right-6 z-40 w-11 h-11 md:w-12 md:h-12 rounded-full bg-saffron text-white shadow-md hover:shadow-lg hover:bg-orange-600 transition-all flex items-center justify-center group ${
             hidden ? "translate-y-24 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"
           }`}
         >

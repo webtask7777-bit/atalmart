@@ -67,23 +67,32 @@ export function BusyStrip() {
   return (
     <div className="bg-amber-400 text-amber-950">
       <div className="max-w-7xl mx-auto px-3 md:px-4">
+        {/* Phones: one line + tap to expand */}
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-left sm:cursor-default"
+          aria-controls="busy-strip-body"
+          className="sm:hidden w-full flex items-center justify-center gap-1.5 py-1.5 text-left"
         >
           <Zap size={13} fill="currentColor" className="shrink-0" />
-          <span className="text-[12px] sm:text-sm font-bold leading-none truncate">{copy.title}</span>
-          <span className="hidden sm:inline text-sm font-medium leading-none truncate">— {body}</span>
+          <span className="text-[12px] font-bold leading-none truncate">{copy.title}</span>
           <ChevronDown
             size={14}
-            className={`sm:hidden shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
           />
         </button>
         {open && (
-          <p className="sm:hidden pb-2 text-[11px] font-medium leading-snug text-center">{body}</p>
+          <p id="busy-strip-body" className="sm:hidden pb-2 text-[11px] font-medium leading-snug text-center">
+            {body}
+          </p>
         )}
+        {/* sm and up: title + message on one line, nothing to toggle */}
+        <p className="hidden sm:flex items-center justify-center gap-1.5 py-1.5 text-sm leading-none">
+          <Zap size={13} fill="currentColor" className="shrink-0" />
+          <span className="font-bold truncate">{copy.title}</span>
+          <span className="font-medium truncate">— {body}</span>
+        </p>
       </div>
     </div>
   );

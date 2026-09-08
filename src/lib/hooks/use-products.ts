@@ -131,9 +131,17 @@ export function useProducts(options?: {
       if (categoryUuid) q = q.eq("category_id", categoryUuid);
       if (options?.search) {
         // Catalogue names mix accented and plain spellings ("NESCAFÉ" vs
-        // "Nescafe", "Lakmé" vs "Lakme"). An accented letter in the query
+        // "Nescafe", "Lakmé" vs "Lakme"). A Latin letter with a diacritic
         // becomes a single-character ILIKE wildcard so either spelling hits.
-        const term = options.search.replace(/[^\x00-\x7F]/gu, "_");
+        // Only Latin-1/Latin-Extended letters are touched: Hindi queries must
+        // reach name_hi untouched. `,` and parentheses are PostgREST filter
+        // syntax, so they are dropped rather than breaking the whole query.
+        const term = options.search
+          .normalize("NFC")
+          .replace(/[,()]/g, " ")
+          .replace(/[\u00C0-\u024F]/g, "_")
+          .replace(/\s+/g, " ")
+          .trim();
         q = q.or(
           `name.ilike.%${term}%,name_hi.ilike.%${term}%,description.ilike.%${term}%`,
         );

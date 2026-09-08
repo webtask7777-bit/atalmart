@@ -26,7 +26,7 @@ export function CartBar() {
     // One compact row (Blinkit/Zepto style): thin free-delivery progress line
     // on top, "n items · ₹total" + hint on the left, "View cart" on the right.
     // Sits flush above the mobile bottom nav; ~55px instead of the old ~125px.
-    <div className="fixed bottom-12 md:bottom-0 left-0 right-0 z-40 px-3 pb-2 md:p-4 pointer-events-none">
+    <div className="fixed bottom-[calc(3rem+env(safe-area-inset-bottom,0px))] md:bottom-0 left-0 right-0 z-40 px-3 pb-2 md:p-4 pointer-events-none">
       <Link
         href="/cart"
         className="block max-w-lg mx-auto pointer-events-auto bg-saffron text-white rounded-xl shadow-lg overflow-hidden hover:bg-saffron-dark transition-colors"
