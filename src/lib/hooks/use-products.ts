@@ -130,8 +130,12 @@ export function useProducts(options?: {
         .range(from, from + pageSize - 1);
       if (categoryUuid) q = q.eq("category_id", categoryUuid);
       if (options?.search) {
+        // Catalogue names mix accented and plain spellings ("NESCAFÉ" vs
+        // "Nescafe", "Lakmé" vs "Lakme"). An accented letter in the query
+        // becomes a single-character ILIKE wildcard so either spelling hits.
+        const term = options.search.replace(/[^\x00-\x7F]/gu, "_");
         q = q.or(
-          `name.ilike.%${options.search}%,name_hi.ilike.%${options.search}%,description.ilike.%${options.search}%`,
+          `name.ilike.%${term}%,name_hi.ilike.%${term}%,description.ilike.%${term}%`,
         );
       }
       return q;

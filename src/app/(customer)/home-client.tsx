@@ -16,6 +16,7 @@ import {
 } from "@/lib/store/age-gate";
 import { HeroCarousel } from "@/components/customer/hero-carousel";
 import { PopatHero, PopatStaticBanner } from "@/components/popat";
+import { BrandRail } from "@/components/customer/brand-rail";
 import { ProductRail } from "@/components/customer/product-rail";
 import { CartBar } from "@/components/customer/cart-bar";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
@@ -299,6 +300,9 @@ function HomeContent() {
           emptyCategories={emptyCategories}
         />
       )}
+
+      {/* Shop by brand — logo tiles for brands with live products */}
+      {!isFiltered && <BrandRail />}
 
       {/* Search results header */}
       {debouncedSearch && (
