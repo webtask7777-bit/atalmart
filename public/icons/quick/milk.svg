@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Milk</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 18h22l4 9v27H17V27z" fill="#FFF4E8"/><path d="M24 9h16v9H24z" fill="#FF6B00"/><path d="M17 30h30"/><path d="M32 48c-7-4-7-12 0-18 7 6 7 14 0 18Z" fill="#FF6B00"/></g>
+</svg>

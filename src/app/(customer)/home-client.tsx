@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Clock, ShieldCheck, Truck, Search, ChevronDown } from "lucide-react";
+import { Clock, ShieldCheck, Truck, ChevronDown } from "lucide-react";
 import { ProductCard } from "@/components/customer/product-card";
 import { CategoryBar } from "@/components/customer/category-bar";
 import { CategoryGrid } from "@/components/customer/category-grid";
@@ -82,7 +82,18 @@ const CATEGORY_COVERS: Record<string, string> = {
 };
 
 // Chips under the search bar — the things people actually type first.
-const QUICK_SEARCHES = ["Milk", "Atta", "Maggi", "Eggs", "Bread", "Oil", "Rice", "Dahi"];
+// Each chip has an outline icon from atalmart-quick-search-icons-svg-v1
+// (public/icons/quick/<key>.svg, same green/orange style as the category icons).
+const QUICK_SEARCHES: { key: string; label: string }[] = [
+  { key: "milk", label: "Milk" },
+  { key: "atta", label: "Atta" },
+  { key: "maggi", label: "Maggi" },
+  { key: "eggs", label: "Eggs" },
+  { key: "bread", label: "Bread" },
+  { key: "oil", label: "Oil" },
+  { key: "rice", label: "Rice" },
+  { key: "dahi", label: "Dahi" },
+];
 
 /** "All products" renders in pages so the DOM (and image count) stays sane. */
 const GRID_PAGE = 30;
@@ -582,15 +593,27 @@ function QuickSearches() {
   return (
     <div className="rail-x mt-3 flex items-center gap-2 -mx-4 px-4">
       <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500">
-        <Search size={12} /> Quick
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/quick/quick.svg" width={16} height={16} alt="" aria-hidden="true" draggable={false} />
+        Quick
       </span>
       {QUICK_SEARCHES.map((q) => (
         <Link
-          key={q}
-          href={`/?search=${encodeURIComponent(q.toLowerCase())}`}
-          className="shrink-0 px-3 py-1.5 rounded-full bg-gray-100 text-[12px] font-semibold text-brown hover:bg-saffron-light hover:text-saffron-deep transition-colors"
+          key={q.key}
+          href={`/?search=${encodeURIComponent(q.key)}`}
+          className="shrink-0 inline-flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full bg-gray-100 text-[12px] font-semibold text-brown hover:bg-saffron-light hover:text-saffron-deep transition-colors"
         >
-          {q}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`/icons/quick/${q.key}.svg`}
+            width={18}
+            height={18}
+            alt=""
+            aria-hidden="true"
+            draggable={false}
+            loading="lazy"
+          />
+          {q.label}
         </Link>
       ))}
     </div>

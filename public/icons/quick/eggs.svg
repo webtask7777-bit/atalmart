@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Eggs</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 31h46l-5 22H14z" fill="#FFF4E8"/><path d="M12 31 18 17h28l6 14" fill="#FFFFFF"/><path d="M17 31c0-8 3-13 7-13s7 5 7 13M33 31c0-8 3-13 7-13s7 5 7 13"/><path d="M12 39h40M22 39l-2 14M32 39v14M42 39l2 14"/><ellipse cx="24" cy="25" rx="5" ry="8" fill="#FF6B00"/><ellipse cx="40" cy="25" rx="5" ry="8" fill="#FF6B00"/></g>
+</svg>

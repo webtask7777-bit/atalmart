@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Bread</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 34c0-13 9-23 22-23s22 10 22 23v20H10z" fill="#FFF4E8"/><path d="M18 30c4 0 7-4 8-10M30 28c4 0 7-4 8-10M42 31c4 0 7-4 8-9"/><path d="M10 40h44"/><path d="M19 54V40M45 54V40"/><circle cx="47" cy="47" r="7" fill="#FF6B00"/></g>
+</svg>

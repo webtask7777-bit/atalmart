@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Rice</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 32h44c0 14-8 23-22 23S10 46 10 32Z" fill="#FFF4E8"/><path d="M8 32h48M17 55h30"/><path d="M16 31c3-9 10-14 16-14s13 5 16 14" fill="#FFFFFF"/><ellipse cx="23" cy="25" rx="2" ry="4" fill="#FF6B00" transform="rotate(-30 23 25)"/><ellipse cx="32" cy="22" rx="2" ry="4" fill="#FF6B00" transform="rotate(18 32 22)"/><ellipse cx="41" cy="26" rx="2" ry="4" fill="#FF6B00" transform="rotate(35 41 26)"/></g>
+</svg>

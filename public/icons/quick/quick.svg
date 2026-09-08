@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Quick</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="27" cy="27" r="17" fill="#FFF4E8"/><path d="m40 40 13 13" stroke-width="6"/><path d="m29 14-10 16h9l-4 12 14-19h-9z" fill="#FF6B00"/></g>
+</svg>
