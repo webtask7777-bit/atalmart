@@ -30,6 +30,9 @@ export const CATEGORY_SLUGS: Record<string, string> = {
 };
 
 export const ALL_CATEGORIES_ICON = "/icons/categories/all.svg";
+/** Symbol sprite with every category icon as #category-<slug>. */
+export const CATEGORY_SPRITE = "/icons/category-sprite.svg";
+export const QUICK_SPRITE = "/icons/quick-sprite.svg";
 
 /** Icon URL for a category name, or null when the pack has no icon for it. */
 export function categoryIconSrc(name: string): string | null {

@@ -17,6 +17,7 @@ import {
 import { HeroCarousel } from "@/components/customer/hero-carousel";
 import { PopatHero, PopatStaticBanner } from "@/components/popat";
 import { BrandRail } from "@/components/customer/brand-rail";
+import { QUICK_SPRITE } from "@/lib/category-icons";
 import { ProductRail } from "@/components/customer/product-rail";
 import { CartBar } from "@/components/customer/cart-bar";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
@@ -593,8 +594,9 @@ function QuickSearches() {
   return (
     <div className="rail-x mt-3 flex items-center gap-2 -mx-4 px-4">
       <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/quick/quick.svg" width={16} height={16} alt="" aria-hidden="true" draggable={false} />
+        <svg width={16} height={16} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+          <use href={`${QUICK_SPRITE}#quick-quick`} />
+        </svg>
         Quick
       </span>
       {QUICK_SEARCHES.map((q) => (
@@ -603,16 +605,9 @@ function QuickSearches() {
           href={`/?search=${encodeURIComponent(q.key)}`}
           className="shrink-0 inline-flex items-center gap-1.5 pl-2 pr-3 py-1.5 rounded-full bg-gray-100 text-[12px] font-semibold text-brown hover:bg-saffron-light hover:text-saffron-deep transition-colors"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/icons/quick/${q.key}.svg`}
-            width={18}
-            height={18}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            loading="lazy"
-          />
+          <svg width={18} height={18} viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+            <use href={`${QUICK_SPRITE}#quick-${q.key}`} />
+          </svg>
           {q.label}
         </Link>
       ))}

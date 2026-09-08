@@ -193,6 +193,8 @@ function Slide({ banner, eager }: { banner: Banner; eager?: boolean }) {
               // renders client-side from the banner store, so a <link preload>
               // just competes with the JS that has to run before it can paint.
               loading={eager ? "eager" : "lazy"}
+              // The first slide's art is the LCP element on the home page.
+              fetchPriority={eager ? "high" : undefined}
               className="w-24 sm:w-36 md:w-48 h-auto object-contain drop-shadow-xl select-none"
             />
           ) : (

@@ -1,4 +1,4 @@
-import { ALL_CATEGORIES_ICON, categoryIconSrc } from "@/lib/category-icons";
+import { CATEGORY_SLUGS, CATEGORY_SPRITE } from "@/lib/category-icons";
 
 interface CategoryIconProps {
   /** Category display name, or "All". */
@@ -12,8 +12,7 @@ interface CategoryIconProps {
 }
 
 /**
- * Category outline icon from the SVG pack. A plain <img>: the files are
- * 2–5 KB static SVGs, so next/image would only add overhead.
+ * Category outline icon from the SVG pack, drawn from the shared sprite.
  */
 export function CategoryIcon({
   name,
@@ -22,20 +21,22 @@ export function CategoryIcon({
   className,
   fallback = null,
 }: CategoryIconProps) {
-  const src = name === "All" ? ALL_CATEGORIES_ICON : categoryIconSrc(name);
-  if (!src) return <>{fallback}</>;
+  const slug = name === "All" ? "all" : CATEGORY_SLUGS[name];
+  if (!slug) return <>{fallback}</>;
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
+    // One external sprite (public/icons/category-sprite.svg, 12 KB, cached)
+    // instead of a request per icon — 18 chips used to mean 18 fetches.
+    <svg
       width={size}
       height={size}
-      alt={label ?? ""}
+      viewBox="0 0 64 64"
+      role={label ? "img" : undefined}
+      aria-label={label}
       aria-hidden={label ? undefined : true}
       className={className}
-      draggable={false}
-      loading="lazy"
-      decoding="async"
-    />
+      focusable="false"
+    >
+      <use href={`${CATEGORY_SPRITE}#category-${slug}`} />
+    </svg>
   );
 }
