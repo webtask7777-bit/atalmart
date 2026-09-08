@@ -3,7 +3,8 @@
 import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { SHOPPABLE_BRANDS, type BrandCard } from "@/lib/brands-data";
+import type { BrandCard } from "@/lib/brands-data";
+import { BRAND_RAIL } from "@/lib/brands-rail-data";
 import { useRailScroll } from "@/lib/hooks/use-rail-scroll";
 import { RailArrow } from "@/components/customer/product-rail";
 
@@ -19,7 +20,7 @@ interface BrandRailProps {
  * (src/lib/brands-data.ts, built by scripts/build-brand-cards.py) and only
  * brands with live products are listed, so no tile leads to an empty page.
  */
-export function BrandRail({ limit = 24, brands = SHOPPABLE_BRANDS }: BrandRailProps) {
+export function BrandRail({ limit = 24, brands = BRAND_RAIL }: BrandRailProps) {
   const railRef = useRef<HTMLUListElement>(null);
   const { canLeft, canRight, scrollByPage } = useRailScroll(railRef);
   const list = brands.slice(0, limit);

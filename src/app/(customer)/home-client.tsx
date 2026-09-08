@@ -15,8 +15,12 @@ import {
   isAgeRestricted,
 } from "@/lib/store/age-gate";
 import { HeroCarousel } from "@/components/customer/hero-carousel";
-import { PopatHero, PopatStaticBanner } from "@/components/popat";
-import { BrandRail } from "@/components/customer/brand-rail";
+import dynamic from "next/dynamic";
+import { PopatStaticBanner } from "@/components/popat";
+// Below-the-fold, client-only sections: loaded after the shell hydrates so
+// their code doesn't sit on the first-paint path.
+const PopatHero = dynamic(() => import("@/components/popat/PopatHero").then((m) => m.PopatHero), { ssr: false });
+const BrandRail = dynamic(() => import("@/components/customer/brand-rail").then((m) => m.BrandRail), { ssr: false });
 import { QUICK_SPRITE } from "@/lib/category-icons";
 import { ProductRail } from "@/components/customer/product-rail";
 import { CartBar } from "@/components/customer/cart-bar";
