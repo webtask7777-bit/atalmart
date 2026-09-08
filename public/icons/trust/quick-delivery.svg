@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="quick-delivery-title">
+  <title id="quick-delivery-title">Quick delivery</title>
+  <style>
+      .quick-stage { transform-origin: 32px 32px; animation: quick-bob 3.2s cubic-bezier(.2,.7,.3,1) infinite; }
+      .quick-hand { transform-origin: 32px 32px; animation: quick-hand 3.2s cubic-bezier(.2,.7,.3,1) infinite; }
+      .quick-speed { animation: quick-speed 3.2s ease-in-out infinite; }
+      .quick-speed.two { animation-delay: 80ms; }
+      .quick-speed.three { animation-delay: 160ms; }
+      @keyframes quick-bob {
+        0%, 8%, 32%, 100% { transform: translateX(0); }
+        16% { transform: translateX(2px); }
+        24% { transform: translateX(-1px); }
+      }
+      @keyframes quick-hand {
+        0%, 8% { transform: rotate(0deg); }
+        28%, 100% { transform: rotate(360deg); }
+      }
+      @keyframes quick-speed {
+        0%, 7%, 34%, 100% { opacity: .25; transform: translateX(2px); }
+        14%, 25% { opacity: 1; transform: translateX(-2px); }
+      }
+    
+      @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; }
+      }
+</style>
+  
+      <g class="quick-stage">
+        <path class="quick-speed one" d="M4 24h10" stroke="#FF6B00" stroke-width="3" stroke-linecap="round"/>
+        <path class="quick-speed two" d="M2 32h12" stroke="#FF6B00" stroke-width="3" stroke-linecap="round"/>
+        <path class="quick-speed three" d="M6 40h8" stroke="#FF6B00" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="34" cy="32" r="18" fill="#FFF4E8" stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M29 9h10M34 9v5M48 18l4-4" stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path class="quick-hand" d="M34 32V21M34 32l8 5" stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="34" cy="32" r="3" fill="#FF6B00" stroke="#0F5C3A" stroke-width="2"/>
+      </g>
+    
+</svg>

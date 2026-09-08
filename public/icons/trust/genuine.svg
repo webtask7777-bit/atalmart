@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="genuine-title">
+  <title id="genuine-title">100 percent genuine products</title>
+  <style>
+      .genuine-shield { transform-origin: 32px 32px; animation: genuine-pulse 3.6s ease-in-out infinite; }
+      .genuine-check { stroke-dasharray: 34; stroke-dashoffset: 0; animation: genuine-check 3.6s ease-in-out infinite; }
+      .genuine-spark { transform-origin: 51px 14px; animation: genuine-spark 3.6s ease-in-out infinite; }
+      @keyframes genuine-pulse {
+        0%, 8%, 36%, 100% { transform: scale(1); }
+        21% { transform: scale(1.035); }
+      }
+      @keyframes genuine-check {
+        0%, 8% { stroke-dashoffset: 34; }
+        28%, 100% { stroke-dashoffset: 0; }
+      }
+      @keyframes genuine-spark {
+        0%, 10%, 38%, 100% { opacity: .3; transform: scale(.65) rotate(0deg); }
+        23% { opacity: 1; transform: scale(1.2) rotate(90deg); }
+      }
+    
+      @media (prefers-reduced-motion: reduce) {
+        * { animation: none !important; }
+      }
+</style>
+  
+      <g class="genuine-shield" stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M32 8 52 15v16c0 12-8 20-20 25-12-5-20-13-20-25V15z" fill="#FFF4E8"/>
+        <circle cx="32" cy="32" r="13" fill="#FFFFFF"/>
+        <path class="genuine-check" d="m23 32 6 7 13-15" fill="none" stroke="#FF6B00" stroke-width="4.5"/>
+      </g>
+      <path class="genuine-spark" d="M51 7v14M44 14h14" stroke="#FF6B00" stroke-width="3" stroke-linecap="round"/>
+    
+</svg>

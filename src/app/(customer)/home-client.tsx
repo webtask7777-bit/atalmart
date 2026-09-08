@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Clock, ShieldCheck, Truck, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { ProductCard } from "@/components/customer/product-card";
 import { CategoryBar } from "@/components/customer/category-bar";
 import { CategoryGrid } from "@/components/customer/category-grid";
@@ -128,9 +128,9 @@ function HomeStaticShell() {
       <QuickSearches />
       <HeroCarousel />
       <section className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
-        <PromiseTile icon={<Clock size={16} />} title="Quick" subtitle="delivery" />
-        <PromiseTile icon={<Truck size={16} />} title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
-        <PromiseTile icon={<ShieldCheck size={16} />} title="100%" subtitle="genuine" />
+        <PromiseTile iconSrc="/icons/trust/quick-delivery.svg" title="Quick" subtitle="delivery" />
+        <PromiseTile iconSrc="/icons/trust/free-delivery.svg" title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
+        <PromiseTile iconSrc="/icons/trust/genuine.svg" title="100%" subtitle="genuine" />
       </section>
       <CategoryGrid selected={null} onSelect={noop} categoryThumbs={CATEGORY_COVERS} />
       <div className="mt-6">
@@ -304,9 +304,9 @@ function HomeContent() {
 
       {/* Promise strip (compact) */}
       <section className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
-        <PromiseTile icon={<Clock size={16} />} title="Quick" subtitle="delivery" />
-        <PromiseTile icon={<Truck size={16} />} title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
-        <PromiseTile icon={<ShieldCheck size={16} />} title="100%" subtitle="genuine" />
+        <PromiseTile iconSrc="/icons/trust/quick-delivery.svg" title="Quick" subtitle="delivery" />
+        <PromiseTile iconSrc="/icons/trust/free-delivery.svg" title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
+        <PromiseTile iconSrc="/icons/trust/genuine.svg" title="100%" subtitle="genuine" />
       </section>
 
       {!isFiltered && (
@@ -679,19 +679,34 @@ function buildRails(products: Product[], categories: Category[]) {
 // Stable shuffle helper lives in src/lib/product-order.ts so the product
 // detail page can reuse the same ordering for its "You may also like" list.
 
+/**
+ * Benefit tile with an animated SVG icon (atalmart-trust-benefits-animated-
+ * svg-v1). The animation lives inside the SVG file (CSS keyframes, long idle
+ * phases, static under prefers-reduced-motion), so a plain <img> is enough.
+ */
 function PromiseTile({
-  icon,
+  iconSrc,
   title,
   subtitle,
 }: {
-  icon: React.ReactNode;
+  iconSrc: string;
   title: string;
   subtitle: string;
 }) {
   return (
-    <div className="bg-saffron-light rounded-xl p-2 md:p-2.5 flex items-center gap-1.5 md:gap-2 border border-orange-100">
-      <div className="w-7 h-7 md:w-8 md:h-8 bg-white rounded-lg flex items-center justify-center shrink-0 text-saffron">
-        {icon}
+    <div className="group bg-saffron-light rounded-xl p-2 md:p-2.5 flex items-center gap-1.5 md:gap-2 border border-orange-100">
+      <div className="w-8 h-8 md:w-9 md:h-9 bg-white rounded-lg flex items-center justify-center shrink-0 ring-1 ring-black/[0.035]">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={iconSrc}
+          width={32}
+          height={32}
+          alt=""
+          aria-hidden="true"
+          decoding="async"
+          draggable={false}
+          className="w-7 h-7 md:w-8 md:h-8 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-110"
+        />
       </div>
       <div className="leading-tight min-w-0">
         <p className="text-[11px] md:text-[12px] font-bold text-brown whitespace-nowrap">
