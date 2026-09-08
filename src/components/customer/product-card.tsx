@@ -64,14 +64,25 @@ export function ProductCard({ product }: ProductCardProps) {
 
       {/* Image area */}
       <div className="relative aspect-square bg-[#f7f7f7] pointer-events-none">
-        {discount > 0 && (
+        {/* One top-left badge: OUT wins over the discount (a discount on an
+            unavailable item is noise). Top-right belongs to the heart. */}
+        {outOfStock ? (
+          <span className="absolute top-2 left-2 z-10 bg-gray-800/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+            OUT
+          </span>
+        ) : discount > 0 ? (
           <span className="absolute top-2 left-2 z-10 bg-indian-green text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
             {discount}% OFF
           </span>
-        )}
-        {outOfStock && (
-          <span className="absolute top-2 right-2 z-10 bg-gray-800/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
-            OUT
+        ) : null}
+        {/* Delivery pill lives inside the image (Blinkit-style) instead of
+            taking its own row below it. */}
+        {!outOfStock && (
+          <span className="absolute bottom-1.5 left-1.5 z-10 inline-flex items-center gap-0.5 bg-white/95 border border-gray-200 px-1.5 py-[3px] rounded-md text-[9px] font-bold tracking-wide text-gray-700">
+            <svg className="w-2.5 h-2.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .2.08.39.22.53l3 3a.75.75 0 101.06-1.06L10.75 9.69V5z" />
+            </svg>
+            QUICK
           </span>
         )}
         {product.image_url ? (
@@ -108,27 +119,20 @@ export function ProductCard({ product }: ProductCardProps) {
         />
       </button>
 
-      {/* Info area */}
-      <div className="p-3 flex flex-col gap-1 flex-1 relative z-10 pointer-events-none">
-        {/* Delivery time pill */}
-        <div className="inline-flex items-center gap-1 bg-gray-100 px-1.5 py-0.5 rounded text-[9px] font-semibold text-gray-700 self-start">
-          <svg className="w-2.5 h-2.5" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-13a.75.75 0 00-1.5 0v5c0 .2.08.39.22.53l3 3a.75.75 0 101.06-1.06L10.75 9.69V5z" />
-          </svg>
-          QUICK
-        </div>
-
-        {/* Product name */}
-        <h3 className="text-[13px] font-semibold text-brown line-clamp-2 leading-tight min-h-[2.6em]">
+      {/* Info area — kept to ~40% of the card: 2-line name, one unit line,
+          price + MRP inline beside the ADD control. */}
+      <div className="px-2.5 pt-2 pb-2.5 flex flex-col flex-1 relative z-10 pointer-events-none">
+        {/* Product name (2 lines reserved so rows stay even) */}
+        <h3 className="text-[12.5px] font-semibold text-brown line-clamp-2 leading-[1.3] min-h-[2.6em]">
           {product.name}
         </h3>
 
         {/* Unit + rating */}
-        <div className="flex items-center justify-between gap-1.5">
-          <p className="text-[11px] text-gray-500 flex items-center gap-1">
+        <div className="mt-0.5 flex items-center justify-between gap-1.5 min-h-[15px]">
+          <p className="text-[11px] text-gray-500 flex items-center gap-1 truncate">
             {displayUnit}
             {otherVariantCount > 0 && (
-              <span className="text-saffron-deep font-semibold text-[10px]">
+              <span className="text-saffron-deep font-semibold text-[10px] shrink-0">
                 +{otherVariantCount} sizes
               </span>
             )}
@@ -144,20 +148,20 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Price + Add button row */}
-        <div className="mt-auto pt-2 flex items-end justify-between gap-2 pointer-events-auto">
-          <div className="min-w-0 flex flex-col">
-            <span className="text-[14px] font-bold text-brown leading-tight">
+        <div className="mt-auto pt-1.5 flex items-center justify-between gap-2 pointer-events-auto">
+          <div className="min-w-0 flex items-baseline gap-1 flex-wrap">
+            <span className="text-[14px] font-bold text-brown leading-none">
               ₹{displayPrice}
             </span>
             {discount > 0 && (
-              <span className="text-[11px] text-gray-500 line-through leading-tight">
+              <span className="text-[10.5px] text-gray-500 line-through leading-none">
                 ₹{displayMrp}
               </span>
             )}
           </div>
 
           {outOfStock ? (
-            <span className="text-[11px] font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-lg uppercase">
+            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 px-2.5 py-1.5 rounded-lg uppercase shrink-0">
               Sold out
             </span>
           ) : quantity === 0 ? (
@@ -166,12 +170,12 @@ export function ProductCard({ product }: ProductCardProps) {
                 stop(e);
                 addItem(product, defaultVariant);
               }}
-              className="px-4 py-1.5 border border-indian-green text-indian-green text-[13px] font-bold rounded-lg hover:bg-green-light transition-colors uppercase tracking-wide"
+              className="px-3.5 py-1 border border-indian-green text-indian-green text-[12px] font-bold rounded-lg hover:bg-green-light transition-colors uppercase tracking-wide shrink-0"
             >
               ADD
             </button>
           ) : (
-            <div className="flex items-center bg-indian-green rounded-lg overflow-hidden shadow-sm">
+            <div className="flex items-center bg-indian-green rounded-lg overflow-hidden shadow-sm shrink-0">
               <button
                 onClick={(e) => {
                   stop(e);
@@ -180,7 +184,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     : updateQuantity(product.id, quantity - 1, defaultVariant?.id ?? null);
                 }}
                 aria-label="decrease"
-                className="px-2 py-1.5 text-white hover:bg-green-700 transition-colors"
+                className="px-2 py-1 text-white hover:bg-green-700 transition-colors"
               >
                 <Minus size={14} strokeWidth={3} />
               </button>
@@ -194,7 +198,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 }}
                 disabled={limitReached}
                 aria-label="increase"
-                className="px-2 py-1.5 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="px-2 py-1 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
               >
                 <Plus size={14} strokeWidth={3} />
               </button>
@@ -202,7 +206,7 @@ export function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
         {lowStock && (
-          <p className="text-[10px] text-orange-600 font-semibold pointer-events-none">
+          <p className="mt-1 text-[10px] text-orange-600 font-semibold pointer-events-none leading-none">
             Only {displayStock} left
           </p>
         )}
