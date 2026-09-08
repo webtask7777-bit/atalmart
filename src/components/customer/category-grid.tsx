@@ -54,12 +54,12 @@ export function CategoryGrid({
               disabled={empty}
               aria-disabled={empty}
               title={empty ? `${cat.name} — coming soon` : cat.name}
-              className={`group relative flex flex-col items-center text-center p-1.5 rounded-2xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 ${
+              className={`group relative flex flex-col items-center text-center rounded-2xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 ${
                 empty ? "opacity-60 cursor-not-allowed" : ""
               }`}
             >
               {empty && (
-                <span className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 rounded-full bg-brown/85 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white whitespace-nowrap shadow-sm">
+                <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 z-10 rounded-full bg-brown/85 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white whitespace-nowrap shadow-sm">
                   Coming soon
                 </span>
               )}
