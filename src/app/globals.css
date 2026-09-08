@@ -83,3 +83,33 @@ body {
     font-size: max(16px, 1em);
   }
 }
+
+/* ── Smooth scrolling ───────────────────────────────────────────────────
+   Page: in-page jumps (anchors, "back to top", focus) glide instead of
+   snapping, and land below the sticky header (--header-h is published by
+   <Header>). Rails: `.rail-x` is the shared horizontal-scroller recipe —
+   native momentum, proximity snapping (free flicks, gentle settle), no
+   rubber-band into browser back/forward at the ends, smooth programmatic
+   scrolls for the arrows. Reduced-motion users get instant scrolls. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h, 64px) + 8px);
+}
+.rail-x {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.rail-x::-webkit-scrollbar {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html,
+  .rail-x {
+    scroll-behavior: auto;
+  }
+}

@@ -75,6 +75,24 @@ export function PopatHero({
     }
   }, [activeIndex, inView, slides]);
 
+  // Touch swipe: a mostly-horizontal flick of 40px+ changes slide; vertical
+  // scrolling through the hero is left alone.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStart.current;
+    touchStart.current = null;
+    if (!start || slides.length < 2) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    setActiveIndex((current) => (current + (dx < 0 ? 1 : -1) + slides.length) % slides.length);
+  };
+
   if (!slides.length) return null;
 
   const slide = slides[activeIndex];
@@ -90,6 +108,8 @@ export function PopatHero({
       aria-label="Popat featured snacks"
       onPointerEnter={() => setIsPaused(true)}
       onPointerLeave={() => setIsPaused(false)}
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
       onFocusCapture={() => setIsPaused(true)}
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {

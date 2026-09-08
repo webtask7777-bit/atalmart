@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Link from "next/link";
+import { useRailScroll } from "@/lib/hooks/use-rail-scroll";
 import { ChevronRight, ChevronLeft } from "lucide-react";
 import { ProductCard } from "@/components/customer/product-card";
 import type { Product } from "@/types";
@@ -40,15 +41,9 @@ export function ProductRail({
   accent = "saffron",
 }: ProductRailProps) {
   const railRef = useRef<HTMLDivElement>(null);
+  const { canLeft, canRight, scrollByPage } = useRailScroll(railRef);
 
   if (products.length === 0) return null;
-
-  const scroll = (dir: "left" | "right") => {
-    const el = railRef.current;
-    if (!el) return;
-    const amount = el.clientWidth * 0.85;
-    el.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
-  };
 
   const colors = ACCENT[accent];
 
@@ -82,25 +77,13 @@ export function ProductRail({
         ) : null}
       </div>
 
-      {/* Scroll arrows (desktop) */}
-      <button
-        onClick={() => scroll("left")}
-        aria-label="scroll left"
-        className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white rounded-full shadow-md items-center justify-center hover:bg-gray-50 -translate-x-1/2"
-      >
-        <ChevronLeft size={18} className="text-brown" />
-      </button>
-      <button
-        onClick={() => scroll("right")}
-        aria-label="scroll right"
-        className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white rounded-full shadow-md items-center justify-center hover:bg-gray-50 translate-x-1/2"
-      >
-        <ChevronRight size={18} className="text-brown" />
-      </button>
+      {/* Scroll arrows (desktop) — only while there is somewhere to go */}
+      <RailArrow dir="left" visible={canLeft} onClick={() => scrollByPage("left")} />
+      <RailArrow dir="right" visible={canRight} onClick={() => scrollByPage("right")} />
 
       <div
         ref={railRef}
-        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-3 px-3 md:-mx-1 md:px-1"
+        className="rail-x flex gap-3 pb-2 -mx-3 px-3 scroll-pl-3 md:-mx-1 md:px-1 md:scroll-pl-1"
       >
         {products.map((p) => (
           <div
@@ -124,5 +107,32 @@ export function ProductRail({
         )}
       </div>
     </section>
+  );
+}
+
+/** Desktop rail arrow: fades out (and stops taking clicks) at the ends. */
+export function RailArrow({
+  dir,
+  visible,
+  onClick,
+}: {
+  dir: "left" | "right";
+  visible: boolean;
+  onClick: () => void;
+}) {
+  const Icon = dir === "left" ? ChevronLeft : ChevronRight;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={dir === "left" ? "Scroll left" : "Scroll right"}
+      aria-hidden={!visible}
+      tabIndex={visible ? 0 : -1}
+      className={`hidden md:flex absolute top-1/2 -translate-y-1/2 z-10 w-9 h-9 bg-white rounded-full shadow-md items-center justify-center hover:bg-gray-50 transition-opacity duration-200 ${
+        dir === "left" ? "left-2 -translate-x-1/2" : "right-2 translate-x-1/2"
+      } ${visible ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+    >
+      <Icon size={18} className="text-brown" />
+    </button>
   );
 }

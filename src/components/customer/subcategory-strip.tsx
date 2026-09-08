@@ -35,7 +35,7 @@ export function SubcategoryStrip({
   if (!visible.length) return null;
 
   return (
-    <div className="overflow-x-auto scrollbar-hide py-2 -mx-4 px-4">
+    <div className="rail-x py-2 -mx-4 px-4">
       <div className="flex gap-2 min-w-max">
         <SubPill label="All" active={selected === null} onClick={() => onSelect(null)} />
         {visible.map((sc) => (

@@ -1,8 +1,11 @@
 "use client";
 
+import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { SHOPPABLE_BRANDS, type BrandCard } from "@/lib/brands-data";
+import { useRailScroll } from "@/lib/hooks/use-rail-scroll";
+import { RailArrow } from "@/components/customer/product-rail";
 
 interface BrandRailProps {
   /** How many tiles to show (the manifest is sorted by live product count). */
@@ -17,6 +20,8 @@ interface BrandRailProps {
  * brands with live products are listed, so no tile leads to an empty page.
  */
 export function BrandRail({ limit = 24, brands = SHOPPABLE_BRANDS }: BrandRailProps) {
+  const railRef = useRef<HTMLUListElement>(null);
+  const { canLeft, canRight, scrollByPage } = useRailScroll(railRef);
   const list = brands.slice(0, limit);
   if (list.length === 0) return null;
   return (
@@ -36,7 +41,10 @@ export function BrandRail({ limit = 24, brands = SHOPPABLE_BRANDS }: BrandRailPr
         </div>
       </div>
 
-      <ul className="flex gap-3 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-1 snap-x list-none m-0">
+      <div className="relative">
+        <RailArrow dir="left" visible={canLeft} onClick={() => scrollByPage("left")} />
+        <RailArrow dir="right" visible={canRight} onClick={() => scrollByPage("right")} />
+        <ul ref={railRef} className="rail-x flex gap-3 -mx-4 px-4 scroll-pl-4 pb-1 list-none m-0">
         {list.map((b) => (
           <li key={b.slug} className="shrink-0 snap-start w-[88px] md:w-[104px]">
             <Link
@@ -60,7 +68,8 @@ export function BrandRail({ limit = 24, brands = SHOPPABLE_BRANDS }: BrandRailPr
             </Link>
           </li>
         ))}
-      </ul>
+        </ul>
+      </div>
     </section>
   );
 }

@@ -579,7 +579,7 @@ function ShowMoreButton({ remaining, onClick }: { remaining: number; onClick: ()
  *  the server-rendered shell too. */
 function QuickSearches() {
   return (
-    <div className="mt-3 flex items-center gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4">
+    <div className="rail-x mt-3 flex items-center gap-2 -mx-4 px-4">
       <span className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-gray-500">
         <Search size={12} /> Quick
       </span>

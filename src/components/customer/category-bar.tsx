@@ -11,7 +11,7 @@ interface CategoryBarProps {
 
 export function CategoryBar({ selected, onSelect, emptyCategories }: CategoryBarProps) {
   return (
-    <div className="overflow-x-auto scrollbar-hide py-2 md:py-3 -mx-4 px-4">
+    <div className="rail-x py-2 md:py-3 -mx-4 px-4">
       <div className="flex gap-2 min-w-max">
         <CategoryPill
           icon="🏪"
