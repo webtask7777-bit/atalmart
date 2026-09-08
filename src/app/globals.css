@@ -31,7 +31,7 @@
   --color-brown: #1A1A1A;
   --color-brown-light: #4A4A4A;
   --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 body {

@@ -44,7 +44,7 @@ export function CategoryGrid({
         )}
       </div>
       <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 lg:grid-cols-10 gap-2 md:gap-3">
-        {CATEGORIES_SEED.map((cat) => {
+        {CATEGORIES_SEED.map((cat, index) => {
           const active = selected === cat.name;
           const thumb = categoryThumbs?.[cat.name];
           const empty = emptyCategories?.has(cat.name) ?? false;
@@ -85,6 +85,9 @@ export function CategoryGrid({
                     alt={`${cat.name} shop`}
                     fill
                     sizes="(max-width: 640px) 22vw, (max-width: 1024px) 12vw, 9vw"
+                    // Only the first row competes at normal priority; the rest
+                    // yield bandwidth to the hero image and the JS that hydrates.
+                    fetchPriority={index < 4 ? undefined : "low"}
                     className="object-contain p-1 group-hover:scale-[1.04] transition-transform duration-200"
                   />
                 ) : (

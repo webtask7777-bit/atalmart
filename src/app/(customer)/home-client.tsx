@@ -16,7 +16,7 @@ import {
 } from "@/lib/store/age-gate";
 import { HeroCarousel } from "@/components/customer/hero-carousel";
 import dynamic from "next/dynamic";
-import { PopatStaticBanner } from "@/components/popat";
+import { PopatStaticBanner } from "@/components/popat/PopatStaticBanner";
 // Below-the-fold, client-only sections: loaded after the shell hydrates so
 // their code doesn't sit on the first-paint path.
 const PopatHero = dynamic(() => import("@/components/popat/PopatHero").then((m) => m.PopatHero), { ssr: false });

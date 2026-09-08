@@ -91,6 +91,7 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 20vw"
+            fetchPriority="low"
             className={`object-contain p-3 group-hover:scale-105 transition-transform duration-200 ${outOfStock ? "opacity-50" : ""}`}
           />
         ) : (
