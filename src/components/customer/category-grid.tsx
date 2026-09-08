@@ -54,34 +54,62 @@ export function CategoryGrid({
               disabled={empty}
               aria-disabled={empty}
               title={empty ? `${cat.name} — coming soon` : cat.name}
-              className={`group relative flex flex-col items-center text-center p-1.5 rounded-2xl transition-all ${
-                active ? "ring-2 ring-saffron ring-offset-2" : ""
-              } ${empty ? "opacity-60 cursor-not-allowed" : ""}`}
+              className={`group relative flex flex-col items-center text-center p-1.5 rounded-2xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron focus-visible:ring-offset-2 ${
+                empty ? "opacity-60 cursor-not-allowed" : ""
+              }`}
             >
               {empty && (
                 <span className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 rounded-full bg-brown/85 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white whitespace-nowrap shadow-sm">
                   Coming soon
                 </span>
               )}
-              {/* Light tile whose canvas matches the "real shop" card art
-                  (#F7F8F6, see public/categories), so the shop scene sits
-                  flush with no visible edge. object-contain + minimal padding:
-                  cropping would cut cart wheels / roofs / the 18+ badge that
-                  make each shop recognisable. */}
-              <div className="relative w-full aspect-square rounded-2xl bg-[#F7F8F6] border border-gray-100 flex items-center justify-center overflow-hidden transition-all group-hover:shadow-md group-hover:-translate-y-0.5">
+              {/* "Shop window" frame. The art's own canvas is #F7F8F6, so the
+                  tile uses the same colour and the frame is drawn ON TOP of the
+                  art: a warm outer border, a thin brass inner line (echoing the
+                  wood/brass in every shop) with a hairline bevel, and a soft
+                  ground shadow under the shop. Hover lifts the card with a
+                  green-tinted shadow; the selected tile turns the frame saffron.
+                  object-contain + minimal padding: cropping would cut cart
+                  wheels / roofs / the 18+ badge. */}
+              <div
+                className={`relative w-full aspect-square rounded-2xl overflow-hidden bg-[#F7F8F6] border transition-all duration-200 group-hover:-translate-y-0.5 ${
+                  active
+                    ? "border-saffron shadow-[0_8px_20px_rgba(255,107,0,0.18)]"
+                    : "border-[#DED6C4] shadow-[0_1px_2px_rgba(60,40,20,0.06)] group-hover:border-[#C9A24A] group-hover:shadow-[0_10px_24px_rgba(22,101,52,0.16)]"
+                }`}
+              >
                 {thumb ? (
                   <Image
                     src={thumb}
                     alt={`${cat.name} shop`}
                     fill
                     sizes="(max-width: 640px) 22vw, (max-width: 1024px) 12vw, 9vw"
-                    className="object-contain p-0.5 group-hover:scale-[1.04] transition-transform duration-200"
+                    className="object-contain p-1 group-hover:scale-[1.04] transition-transform duration-200"
                   />
                 ) : (
                   <span className="text-3xl md:text-4xl group-hover:scale-105 transition-transform duration-200">
                     {cat.icon}
                   </span>
                 )}
+                {/* focus vignette: clear over the shop, warm cream at the edges */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_48%,transparent_52%,rgba(246,242,232,0.55)_78%,rgba(240,234,220,0.95)_100%)]"
+                />
+                {/* ground shadow under the shop */}
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-[16%] bottom-[8%] h-[7%] rounded-[50%] bg-[#1F3A2A]/12 blur-[3px]"
+                />
+                {/* brass inner line + hairline bevel */}
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute inset-[4px] rounded-[12px] border-[1.5px] transition-colors duration-200 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.9),0_0_0_1px_rgba(255,255,255,0.7)] ${
+                    active
+                      ? "border-saffron/80"
+                      : "border-[#C9A24A]/60 group-hover:border-[#C9A24A]"
+                  }`}
+                />
               </div>
               {/* Reserved 2-line height (min-h) keeps every row even no matter
                   the word count — same proven trick as the product-card name.
