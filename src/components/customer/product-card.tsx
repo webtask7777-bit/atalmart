@@ -55,7 +55,7 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 hover:border-saffron/40 transition-all group overflow-hidden flex flex-col relative">
+    <div className="h-full bg-white rounded-2xl border border-gray-200 hover:border-saffron/40 transition-all group overflow-hidden flex flex-col relative">
       <Link
         href={`/product/${product.id}`}
         aria-label={product.name}
@@ -122,8 +122,10 @@ export function ProductCard({ product }: ProductCardProps) {
       {/* Info area — kept to ~40% of the card: 2-line name, one unit line,
           price + MRP inline beside the ADD control. */}
       <div className="px-2.5 pt-2 pb-2.5 flex flex-col flex-1 relative z-10 pointer-events-none">
-        {/* Product name (2 lines reserved so rows stay even) */}
-        <h3 className="text-[12.5px] font-semibold text-brown line-clamp-2 leading-[1.3] min-h-[2.6em]">
+        {/* Product name — up to 2 lines, no reserved blank line: the unit hugs
+            the name and any slack sits above the price row (mt-auto), while
+            the flex/grid parents stretch cards to equal height. */}
+        <h3 className="text-[12.5px] font-semibold text-brown line-clamp-2 leading-[1.3]">
           {product.name}
         </h3>
 
