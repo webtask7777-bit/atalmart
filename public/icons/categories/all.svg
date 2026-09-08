@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">All</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="10" width="18" height="18" rx="4" fill="#FF6B00"/><rect x="36" y="10" width="18" height="18" rx="4" fill="#FFF4E8"/><rect x="10" y="36" width="18" height="18" rx="4" fill="#FFF4E8"/><rect x="36" y="36" width="18" height="18" rx="4" fill="#FF6B00"/></g>
+</svg>

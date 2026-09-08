@@ -5,6 +5,7 @@ import { ArrowRight, Clock, MapPin, ShieldCheck, Truck, Zap } from "lucide-react
 import { APP_NAME, CATEGORIES_SEED, DELIVERY_FEE, FREE_DELIVERY_ABOVE, SUPPORT_PHONE } from "@/lib/constants";
 import { SECTOR_AREAS, findSectorArea } from "@/lib/sectors-data";
 import { formatEta } from "@/lib/delivery-zones";
+import { CategoryIcon } from "@/components/customer/category-icon";
 
 // One static landing page per mapped sector — "grocery delivery in Sector 24
 // Naya Raipur" style queries. Content is generated from sectors-data.ts.
@@ -112,9 +113,10 @@ export default async function SectorDeliveryPage({ params }: Props) {
             <Link
               key={c.name}
               href={`/?category=${encodeURIComponent(c.name)}`}
-              className="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-brown hover:border-saffron hover:text-saffron-deep transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-brown hover:border-saffron hover:text-saffron-deep transition-colors"
             >
-              <span>{c.icon}</span> {c.name}
+              <CategoryIcon name={c.name} size={18} fallback={<span>{c.icon}</span>} />
+              {c.name}
             </Link>
           ))}
         </div>

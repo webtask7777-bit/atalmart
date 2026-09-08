@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Paan Corner</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20h42l-4-9H15z" fill="#FF6B00"/><path d="M13 20v33h38V20" fill="#FFF4E8"/><path d="M19 20v33M45 20v33"/><path d="M13 28c4 0 4-5 8-5s4 5 8 5 4-5 8-5 4 5 8 5 4-5 8-5" fill="none"/><path d="M32 45c-8-4-8-14 4-17 6 8 2 15-4 17Z" fill="#FF6B00"/><path d="m32 45 4-17"/><path d="M23 49h18"/></g>
+</svg>

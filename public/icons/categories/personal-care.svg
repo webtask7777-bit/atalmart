@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Personal Care</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M13 23h23v31H13z" fill="#FFF4E8"/><path d="M18 15h13v8H18zM21 9h18v6M36 9v5h8"/><path d="M13 36h23"/><path d="M25 48c-6-3-6-9 0-13 6 4 6 10 0 13Z" fill="#FF6B00"/><path d="M43 28h12v26H43z" fill="#FF6B00"/><path d="M43 33h12M46 22h6v6"/><path d="M47 39h4M47 44h4M47 49h4" stroke="#FFFFFF" stroke-width="2"/></g>
+</svg>

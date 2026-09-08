@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" shape-rendering="geometricPrecision" role="img" aria-labelledby="title">
+  <title id="title">Chocolates &amp; Sweets</title>
+  <g stroke="#0F5C3A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="10" width="27" height="43" rx="4" fill="#FFF4E8"/><path d="M11 24h27M11 38h27M24.5 10v43"/><circle cx="47" cy="42" r="10" fill="#FF6B00"/><path d="M42 39c3-5 8-5 11 0M43 46h8" stroke="#FFFFFF" stroke-width="2.2"/></g>
+</svg>

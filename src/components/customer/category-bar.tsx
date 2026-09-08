@@ -1,6 +1,7 @@
 "use client";
 
 import { CATEGORIES_SEED } from "@/lib/constants";
+import { CategoryIcon } from "@/components/customer/category-icon";
 
 interface CategoryBarProps {
   selected: string | null;
@@ -14,7 +15,7 @@ export function CategoryBar({ selected, onSelect, emptyCategories }: CategoryBar
     <div className="rail-x py-2 md:py-3 -mx-4 px-4">
       <div className="flex gap-2 min-w-max">
         <CategoryPill
-          icon="🏪"
+          icon={<CategoryIcon name="All" size={20} />}
           label="All"
           active={selected === null}
           onClick={() => onSelect(null)}
@@ -22,7 +23,7 @@ export function CategoryBar({ selected, onSelect, emptyCategories }: CategoryBar
         {CATEGORIES_SEED.filter((cat) => !emptyCategories?.has(cat.name)).map((cat) => (
           <CategoryPill
             key={cat.name}
-            icon={cat.icon}
+            icon={<CategoryIcon name={cat.name} size={20} fallback={<span className="text-base leading-none">{cat.icon}</span>} />}
             label={cat.name}
             active={selected === cat.name}
             onClick={() => onSelect(cat.name)}
@@ -39,7 +40,7 @@ function CategoryPill({
   active,
   onClick,
 }: {
-  icon: string;
+  icon: React.ReactNode;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -53,7 +54,15 @@ function CategoryPill({
           : "bg-white text-brown border border-gray-200 hover:border-saffron hover:text-saffron"
       }`}
     >
-      <span className="text-base leading-none">{icon}</span>
+      {/* The outline icons are green/orange on transparent; on the saffron
+          active pill they sit on a small white disc so they stay legible. */}
+      <span
+        className={`flex items-center justify-center rounded-full transition-colors ${
+          active ? "bg-white/95 w-6 h-6 -ml-1" : ""
+        }`}
+      >
+        {icon}
+      </span>
       <span>{label}</span>
     </button>
   );

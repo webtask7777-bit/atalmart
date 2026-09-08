@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { CATEGORIES_SEED } from "@/lib/constants";
+import { CategoryIcon } from "@/components/customer/category-icon";
 
 interface CategoryGridProps {
   selected: string | null;
@@ -87,9 +88,12 @@ export function CategoryGrid({
                     className="object-contain p-1 group-hover:scale-[1.04] transition-transform duration-200"
                   />
                 ) : (
-                  <span className="text-3xl md:text-4xl group-hover:scale-105 transition-transform duration-200">
-                    {cat.icon}
-                  </span>
+                  <CategoryIcon
+                    name={cat.name}
+                    size={36}
+                    className="group-hover:scale-105 transition-transform duration-200"
+                    fallback={<span className="text-3xl md:text-4xl">{cat.icon}</span>}
+                  />
                 )}
                 {/* focus vignette: clear over the shop, warm cream at the edges */}
                 <span
