@@ -59,21 +59,23 @@ export function CategoryGrid({
               } ${empty ? "opacity-60 cursor-not-allowed" : ""}`}
             >
               {empty && (
-                <span className="absolute top-2 left-1/2 -translate-x-1/2 z-10 rounded-full bg-brown/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white whitespace-nowrap">
+                <span className="absolute -top-1 left-1/2 -translate-x-1/2 z-10 rounded-full bg-brown/85 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white whitespace-nowrap shadow-sm">
                   Coming soon
                 </span>
               )}
-              {/* Clean light tile (Blinkit/Zepto style). White-background
-                  product photos sit flush on the near-white tile, so no
-                  background removal is ever needed. */}
-              <div className="relative w-full aspect-square rounded-2xl bg-[#f7f7f7] border border-gray-100 flex items-center justify-center overflow-hidden transition-all group-hover:shadow-md group-hover:-translate-y-0.5">
+              {/* Light tile whose canvas matches the "real shop" card art
+                  (#F7F8F6, see public/categories), so the shop scene sits
+                  flush with no visible edge. object-contain + minimal padding:
+                  cropping would cut cart wheels / roofs / the 18+ badge that
+                  make each shop recognisable. */}
+              <div className="relative w-full aspect-square rounded-2xl bg-[#F7F8F6] border border-gray-100 flex items-center justify-center overflow-hidden transition-all group-hover:shadow-md group-hover:-translate-y-0.5">
                 {thumb ? (
                   <Image
                     src={thumb}
-                    alt={cat.name}
+                    alt={`${cat.name} shop`}
                     fill
                     sizes="(max-width: 640px) 22vw, (max-width: 1024px) 12vw, 9vw"
-                    className="object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                    className="object-contain p-0.5 group-hover:scale-[1.04] transition-transform duration-200"
                   />
                 ) : (
                   <span className="text-3xl md:text-4xl group-hover:scale-105 transition-transform duration-200">

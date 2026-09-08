@@ -49,7 +49,8 @@ const CATEGORY_HERO_KEYWORDS: Record<string, string[]> = {
   "Pharma & Wellness": ["dolo", "crocin", "vicks", "band-aid", "bandaid", "paracetamol", "sanitizer", "volini", "moov", "strepsils"],
 };
 
-// Custom per-category tile images (1:1, white bg) live in public/categories/.
+// Category tile art: "real shop" cards (atalmart-real-shop-card-pack-v2, 256px
+// WebP cut from the full-res masters) live in public/categories/.
 // An entry here OVERRIDES the auto-picked product photo for that category.
 // Collage covers were removed — drop each custom image into public/categories/
 // and add its slug below. Omit a slug → that tile falls back to the auto
