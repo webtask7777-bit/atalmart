@@ -94,7 +94,7 @@ export const heroSlides = [
     meta: "₹70 OFF · 10 kg family pack",
     tone: "atta",
     products: [
-      { src: `${p}/india-gate-tibar.webp`, alt: "India Gate basmati rice" },
+      { src: `${p}/india-gate-mogra.webp`, alt: "India Gate Mini Mogra basmati rice" },
       { src: `${p}/aashirvaad-chakki-10kg.webp`, alt: "Aashirvaad Shudh Chakki Atta 10 kg" },
       { src: `${p}/amul-ghee-1l.webp`, alt: "Amul cow ghee" },
     ],
