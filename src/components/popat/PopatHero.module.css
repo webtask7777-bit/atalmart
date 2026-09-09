@@ -103,7 +103,7 @@
   width: min(100%, 1500px);
   min-height: inherit;
   margin-inline: auto;
-  padding: clamp(30px, 3.6vw, 64px) clamp(28px, 5.2vw, 88px) clamp(58px, 5vw, 78px);
+  padding: clamp(30px, 3.6vw, 64px) clamp(28px, 5.2vw, 88px) clamp(30px, 3.6vw, 56px);
   animation: slideIn 480ms cubic-bezier(0.2, 0.85, 0.25, 1) both;
 }
 
@@ -202,11 +202,18 @@
   box-shadow: 0 14px 34px color-mix(in srgb, var(--button) 42%, transparent);
 }
 
-.cta:focus-visible,
-.arrow:focus-visible,
-.dot:focus-visible {
+.slideLink {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.slideLink:focus-visible {
   outline: 3px solid var(--accent);
-  outline-offset: 3px;
+  outline-offset: -6px;
+  border-radius: inherit;
 }
 
 .ctaMark {
@@ -496,7 +503,7 @@
 
   .shell {
     grid-template-columns: minmax(0, 0.88fr) minmax(330px, 1.12fr);
-    padding: 32px 28px 64px;
+    padding: 32px 28px 36px;
   }
 
   .title {
@@ -549,7 +556,7 @@
     grid-template-columns: 1fr;
     grid-template-rows: auto auto;
     gap: 4px;
-    padding: 24px 20px 58px;
+    padding: 24px 20px 24px;
   }
 
   .copy {

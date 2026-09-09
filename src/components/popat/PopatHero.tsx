@@ -78,6 +78,7 @@ export function PopatHero({
   // Touch swipe: a mostly-horizontal flick of 40px+ changes slide; vertical
   // scrolling through the hero is left alone.
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const swipedRef = useRef(false);
   const onTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
     touchStart.current = { x: t.clientX, y: t.clientY };
@@ -90,14 +91,13 @@ export function PopatHero({
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    swipedRef.current = true;
     setActiveIndex((current) => (current + (dx < 0 ? 1 : -1) + slides.length) % slides.length);
   };
 
   if (!slides.length) return null;
 
   const slide = slides[activeIndex];
-  const goTo = (index: number) =>
-    setActiveIndex((index + slides.length) % slides.length);
 
   return (
     <section
@@ -120,110 +120,79 @@ export function PopatHero({
       <div className={styles.pattern} aria-hidden="true" />
       <div className={styles.orb} aria-hidden="true" />
 
-      <div className={styles.shell} key={slide.id}>
-        <div className={styles.copy}>
-          <Image
-            className={styles.logo}
-            src="/popat/popat-logo.webp"
-            width={260}
-            height={165}
-            alt="Popat Plus"
-            priority={eager}
-            loading={eager ? "eager" : "lazy"}
-          />
+      {/* The whole slide is the link (no separate CTA button). A swipe that
+          just changed the slide must not also count as a tap. */}
+      <Link
+        href={slide.href}
+        aria-label={`${slide.eyebrow} — ${slide.title} ${slide.accent}. ${slide.cta}`}
+        className={styles.slideLink}
+        draggable={false}
+        onClick={(e) => {
+          if (swipedRef.current) {
+            e.preventDefault();
+            swipedRef.current = false;
+          }
+        }}
+      >
+        <div className={styles.shell} key={slide.id}>
+          <div className={styles.copy}>
+            <Image
+              className={styles.logo}
+              src="/popat/popat-logo.webp"
+              width={260}
+              height={165}
+              alt="Popat Plus"
+              priority={eager}
+              loading={eager ? "eager" : "lazy"}
+            />
 
-          <p className={styles.eyebrow}>{slide.eyebrow}</p>
+            <p className={styles.eyebrow}>{slide.eyebrow}</p>
 
-          <h2 className={styles.title}>
-            <span>{slide.title}</span>
-            <strong>{slide.accent}</strong>
-          </h2>
+            <h2 className={styles.title}>
+              <span>{slide.title}</span>
+              <strong>{slide.accent}</strong>
+            </h2>
 
-          <p className={styles.description}>{slide.description}</p>
+            <p className={styles.description}>{slide.description}</p>
 
-          <div className={styles.actions}>
-            <Link className={styles.cta} href={slide.href}>
-              <span className={styles.ctaMark}>A</span>
-              <span>{slide.cta}</span>
-              <svg viewBox="0 0 20 20" aria-hidden="true">
-                <path d="M4 10h11M11 5l5 5-5 5" />
-              </svg>
-            </Link>
-            <span className={styles.microBadge}>
-              <i aria-hidden="true" />
-              100% Veg
-            </span>
-          </div>
-        </div>
-
-        <div
-          className={styles.products}
-          aria-label={"Products for " + slide.eyebrow}
-        >
-          <div className={styles.productGlow} aria-hidden="true" />
-          {slide.products.map((item, index) => (
-            <div
-              className={[
-                styles.product,
-                styles["product" + (index + 1)],
-              ].join(" ")}
-              key={slide.id + "-" + item.src}
-            >
-              <Image
-                src={item.src}
-                alt={item.alt}
-                fill
-                priority={eager && activeIndex === firstSlide && index < 3}
-                loading={eager ? "eager" : "lazy"}
-                sizes="(max-width: 720px) 34vw, (max-width: 1100px) 22vw, 19vw"
-              />
+            <div className={styles.actions}>
+              <span className={styles.microBadge}>
+                <i aria-hidden="true" />
+                100% Veg
+              </span>
             </div>
-          ))}
-          <div className={styles.flavourBadge}>
-            <span>{slide.badge}</span>
-            <small>Popat favourites</small>
           </div>
-        </div>
-      </div>
 
-      {slides.length > 1 && (
-        <div className={styles.navigation}>
-          <button
-            className={styles.arrow}
-            type="button"
-            onClick={() => goTo(activeIndex - 1)}
-            aria-label="Previous banner"
+          <div
+            className={styles.products}
+            aria-label={"Products for " + slide.eyebrow}
           >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="m12 4-6 6 6 6" />
-            </svg>
-          </button>
-
-          <div className={styles.dots} role="group" aria-label="Choose banner">
-            {slides.map((item, index) => (
-              <button
-                type="button"
-                aria-pressed={index === activeIndex}
-                aria-label={"Show " + item.eyebrow + " banner"}
-                className={styles.dot}
-                key={item.id}
-                onClick={() => goTo(index)}
-              />
+            <div className={styles.productGlow} aria-hidden="true" />
+            {slide.products.map((item, index) => (
+              <div
+                className={[
+                  styles.product,
+                  styles["product" + (index + 1)],
+                ].join(" ")}
+                key={slide.id + "-" + item.src}
+              >
+                <Image
+                  src={item.src}
+                  alt={item.alt}
+                  fill
+                  priority={eager && activeIndex === firstSlide && index < 3}
+                  loading={eager ? "eager" : "lazy"}
+                  sizes="(max-width: 720px) 34vw, (max-width: 1100px) 22vw, 19vw"
+                />
+              </div>
             ))}
+            <div className={styles.flavourBadge}>
+              <span>{slide.badge}</span>
+              <small>Popat favourites</small>
+            </div>
           </div>
-
-          <button
-            className={styles.arrow}
-            type="button"
-            onClick={() => goTo(activeIndex + 1)}
-            aria-label="Next banner"
-          >
-            <svg viewBox="0 0 20 20" aria-hidden="true">
-              <path d="m8 4 6 6-6 6" />
-            </svg>
-          </button>
         </div>
-      )}
+      </Link>
 
       <p className={styles.srOnly} aria-live="polite">
         Showing banner {activeIndex + 1} of {slides.length}: {slide.eyebrow}
