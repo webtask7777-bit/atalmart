@@ -34,7 +34,7 @@ export const useUserPincodeStore = create<UserPincodeStore>()(
       setPincode: (pincode, area = null) =>
         set({ pincode: pincode.trim(), area: area || null, promptDismissed: true }),
       // clearPincode also un-dismisses so the picker modal opens again.
-      // Without this reset, tapping "Tap to set" on a header that had a
+      // Without this reset, tapping "Pincode set karo" on a header that had a
       // previously-dismissed pincode prompt was a silent no-op.
       clearPincode: () => set({ pincode: null, area: null, promptDismissed: false }),
       dismissPrompt: () => set({ promptDismissed: true }),

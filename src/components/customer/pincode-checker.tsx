@@ -9,6 +9,7 @@ import {
   Search,
   Crosshair,
   Loader2,
+  Bell,
 } from "lucide-react";
 import {
   isServiceablePincode,
@@ -91,40 +92,48 @@ export function PincodeCheckerForm({
   const dismissPrompt = useUserPincodeStore((s) => s.dismissPrompt);
 
   const [input, setInput] = useState(storedPincode || "");
-  const [result, setResult] = useState<CheckResult>({ status: "idle" });
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   // Precise area label resolved from a location lookup (e.g. "Sector 24, Atal
   // Nagar"). Cleared on manual typing so the header doesn't show a stale sector.
   const [detectedArea, setDetectedArea] = useState<string | null>(null);
   const autoTriedRef = useRef(false);
+  // True only when the 6 digits came from the user (typing or tapping a
+  // pincode chip). A geolocation fill can land on the *nearest* sector when
+  // the user is outside the zone, so we never auto-advance on that path —
+  // they must tap "Aage badhein" themselves.
+  const userEnteredRef = useRef(false);
+
+  // "Notify me when you launch here" (shown on a non-serviceable pincode)
+  const [notifyContact, setNotifyContact] = useState("");
+  const [notifyState, setNotifyState] = useState<
+    { status: "idle" } | { status: "sending" } | { status: "done" } | { status: "error"; message: string }
+  >({ status: "idle" });
 
   const serviceableList = useMemo(
     () => Array.from(parseServiceablePincodes(settings.serviceablePincodes)),
     [settings.serviceablePincodes],
   );
 
-  const check = (val: string) => {
-    const cleaned = val.replace(/\D/g, "").slice(0, 6);
-    if (cleaned.length !== 6) {
-      setResult({ status: "idle" });
-      return;
-    }
+  const pickPincode = (pin: string) => {
+    userEnteredRef.current = true;
+    setDetectedArea(null);
+    setNotifyState({ status: "idle" });
+    setInput(pin);
+  };
+
+  // Live-check: derived from the input, re-evaluated as the user types.
+  const result = useMemo<CheckResult>(() => {
+    const cleaned = input.replace(/\D/g, "").slice(0, 6);
+    if (cleaned.length !== 6) return { status: "idle" };
     if (isServiceablePincode(cleaned, settings.serviceablePincodes)) {
-      setResult({
+      return {
         status: "valid",
         pincode: cleaned,
         area: PINCODE_AREA_LABELS[cleaned],
-      });
-    } else {
-      setResult({ status: "invalid", pincode: cleaned });
+      };
     }
-  };
-
-  // Live-check as user types 6 digits
-  useEffect(() => {
-    check(input);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return { status: "invalid", pincode: cleaned };
   }, [input, settings.serviceablePincodes]);
 
   const handleContinue = () => {
@@ -133,8 +142,56 @@ export function PincodeCheckerForm({
     // generic pincode area label for manually-typed pincodes.
     const area = detectedArea || result.area || null;
     setPincode(result.pincode, area);
-    toast.success(`Welcome! Delivering to ${area || result.pincode}`);
+    toast.success(`Welcome! ${area || result.pincode} mein deliver karenge`);
     onValidated?.(result.pincode);
+  };
+
+  // Auto-continue: a valid, user-entered pincode advances on its own after a
+  // short beat (long enough to read "Yahan deliver karte hain"). Typing again
+  // cancels it. Modal only — inline forms have their own submit affordance.
+  const AUTO_ADVANCE_MS = 1100;
+  useEffect(() => {
+    if (variant !== "modal") return;
+    if (result.status !== "valid" || !userEnteredRef.current) return;
+    const id = setTimeout(handleContinue, AUTO_ADVANCE_MS);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, variant]);
+
+  const submitNotify = async () => {
+    if (result.status !== "invalid") return;
+    const contact = notifyContact.trim();
+    if (!contact) {
+      setNotifyState({ status: "error", message: "Phone number ya email daalein" });
+      return;
+    }
+    setNotifyState({ status: "sending" });
+    try {
+      const res = await fetch("/api/expansion/notify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pincode: result.pincode, contact }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        // 400 carries a user-facing validation message; anything else is
+        // ours to own, so don't surface raw server errors.
+        setNotifyState({
+          status: "error",
+          message:
+            res.status === 400 && data?.error
+              ? data.error
+              : "Abhi save nahi hua — thodi der baad try karein",
+        });
+        return;
+      }
+      setNotifyState({ status: "done" });
+    } catch {
+      setNotifyState({
+        status: "error",
+        message: "Network issue — thodi der baad try karein",
+      });
+    }
   };
 
   // Geolocate → /api/geo/contains → fill the pincode field with the matched
@@ -204,7 +261,9 @@ export function PincodeCheckerForm({
         // Remember the precise sector (e.g. "Sector 24") so the header shows
         // it instead of the generic "Sector 21–29" pincode label.
         setDetectedArea(sectorName ?? null);
-        setInput(pin); // live-check effect will run validation
+        userEnteredRef.current = false; // never auto-advance a geo fill
+        setNotifyState({ status: "idle" });
+        setInput(pin); // result is derived from input
         finish();
       } else {
         finish("Aap hamare delivery area se kaafi door hain");
@@ -272,8 +331,10 @@ export function PincodeCheckerForm({
           autoFocus={autofocus}
           value={input}
           onChange={(e) => {
+            userEnteredRef.current = true;
             setInput(e.target.value.replace(/\D/g, ""));
             setDetectedArea(null); // manual edit → drop the location-derived sector
+            setNotifyState({ status: "idle" });
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter" && result.status === "valid") {
@@ -281,7 +342,7 @@ export function PincodeCheckerForm({
               handleContinue();
             }
           }}
-          placeholder="Enter 6-digit pincode"
+          placeholder="6-digit pincode daalein"
           className="w-full pl-9 pr-3 py-3 text-base font-mono tracking-wider bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-saffron focus:bg-white transition-colors"
         />
       </div>
@@ -301,7 +362,7 @@ export function PincodeCheckerForm({
         ) : (
           <>
             <Crosshair size={14} />
-            Use my current location
+            Meri location use karo
           </>
         )}
       </button>
@@ -322,7 +383,7 @@ export function PincodeCheckerForm({
             />
             <div className="text-sm">
               <p className="font-bold text-indian-green">
-                Yes! We deliver here ✨
+                Yes! Yahan deliver karte hain ✨
               </p>
               {result.area && (
                 <p className="text-xs text-green-700 mt-0.5">{result.area}</p>
@@ -331,15 +392,70 @@ export function PincodeCheckerForm({
           </div>
         )}
         {result.status === "invalid" && (
-          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl">
-            <XCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-bold text-red-700">Sorry — not yet here 😔</p>
-              <p className="text-xs text-red-600 mt-0.5">
-                Atalmart abhi sirf Naya Raipur mein deliver karta hai. Hum
-                jaldi expand karenge!
-              </p>
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-start gap-2">
+              <XCircle size={18} className="text-red-600 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-bold text-red-700">Sorry — yahan abhi nahi 😔</p>
+                <p className="text-xs text-red-600 mt-0.5">
+                  Atalmart abhi sirf Naya Raipur mein deliver karta hai. Hum
+                  jaldi expand karenge!
+                </p>
+              </div>
             </div>
+
+            {/* Notify-me capture — demand signal for where to expand next */}
+            {notifyState.status === "done" ? (
+              <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-indian-green bg-green-light border border-green-200 rounded-lg px-2.5 py-2">
+                <CheckCircle2 size={14} className="shrink-0" />
+                Done! {result.pincode} mein launch hote hi batayenge 🙌
+              </p>
+            ) : (
+              <form
+                className="mt-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitNotify();
+                }}
+              >
+                <label
+                  htmlFor="expansion-notify-contact"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-brown"
+                >
+                  <Bell size={13} className="text-saffron" />
+                  Yahan launch ho to batayein?
+                </label>
+                <div className="mt-1.5 flex gap-1.5">
+                  <input
+                    id="expansion-notify-contact"
+                    type="text"
+                    inputMode="email"
+                    autoComplete="tel"
+                    value={notifyContact}
+                    onChange={(e) => {
+                      setNotifyContact(e.target.value);
+                      if (notifyState.status === "error") setNotifyState({ status: "idle" });
+                    }}
+                    placeholder="WhatsApp number ya email"
+                    className="min-w-0 flex-1 px-3 py-2 text-sm bg-white border-2 border-gray-200 rounded-lg focus:outline-none focus:border-saffron transition-colors"
+                  />
+                  <button
+                    type="submit"
+                    disabled={notifyState.status === "sending"}
+                    className="shrink-0 px-3 py-2 text-xs font-bold text-white bg-saffron rounded-lg hover:bg-orange-600 disabled:opacity-60 transition-colors"
+                  >
+                    {notifyState.status === "sending" ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      "Batao"
+                    )}
+                  </button>
+                </div>
+                {notifyState.status === "error" && (
+                  <p className="mt-1.5 text-[11px] text-red-700">{notifyState.message}</p>
+                )}
+              </form>
+            )}
           </div>
         )}
       </div>
@@ -352,32 +468,49 @@ export function PincodeCheckerForm({
             disabled={result.status !== "valid"}
             className="mt-2 w-full flex items-center justify-center gap-2 py-3 bg-saffron text-white font-bold rounded-xl hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Continue
+            Aage badhein
             <ArrowRight size={16} />
           </button>
           <button
             onClick={dismissPrompt}
             className="mt-2 w-full text-xs text-gray-500 hover:text-brown py-2"
           >
-            Skip for now (browse only — checkout will still ask)
+            Abhi browse karo, pincode baad mein
           </button>
         </>
       )}
 
-      {/* Serviceable pincodes hint */}
-      <p className="text-[11px] text-gray-500 mt-3 leading-relaxed text-center">
-        We currently serve pincodes:{" "}
-        <span className="font-mono text-brown">
-          {serviceableList.join(", ")}
-        </span>
-      </p>
+      {/* Serviceable pincodes — tap one to fill the field */}
+      <div className="mt-3 text-center">
+        <p className="text-[11px] text-gray-500">Ye pincodes serve karte hain:</p>
+        <div className="mt-1.5 flex flex-wrap justify-center gap-1.5">
+          {serviceableList.map((pin) => {
+            const active = input === pin;
+            return (
+              <button
+                key={pin}
+                type="button"
+                onClick={() => pickPincode(pin)}
+                aria-pressed={active}
+                className={`font-mono text-[11px] px-2 py-1 rounded-md border transition-colors ${
+                  active
+                    ? "bg-saffron text-white border-saffron"
+                    : "bg-gray-50 text-brown border-gray-200 hover:border-saffron hover:bg-saffron-light"
+                }`}
+              >
+                {pin}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
 
 /**
  * Compact badge for the header. Shows current pincode + "change" link, or
- * a "Set pincode" CTA when none stored.
+ * a "Pincode set karo" CTA when none stored.
  */
 export function PincodeBadge() {
   const hydrated = useUserPincodeHydrated();
@@ -403,10 +536,10 @@ export function PincodeBadge() {
       />
       <div className="min-w-0">
         <p className="text-[9px] uppercase tracking-wider text-gray-500 leading-none">
-          {pincode ? "Deliver to" : "Set pincode"}
+          {pincode ? "Deliver to" : "Delivery pincode"}
         </p>
         <p className="text-xs font-semibold text-brown truncate leading-tight mt-0.5">
-          {pincode ? area || pincode : "Tap to choose"}
+          {pincode ? area || pincode : "Pincode set karo"}
         </p>
       </div>
     </button>

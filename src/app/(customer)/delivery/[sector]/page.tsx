@@ -125,7 +125,7 @@ export default async function SectorDeliveryPage({ params }: Props) {
       <section className="mt-6">
         <h2 className="text-sm font-bold text-brown mb-2">Kaise order karein</h2>
         <ol className="list-decimal pl-5 text-sm text-brown-light space-y-1">
-          <li>Pincode <strong>{s.pincode}</strong> daalein ya &quot;Use my current location&quot; dabayein.</li>
+          <li>Pincode <strong>{s.pincode}</strong> daalein ya &quot;Meri location use karo&quot; dabayein.</li>
           <li>Products cart mein daalein — ₹{FREE_DELIVERY_ABOVE} se upar free delivery.</li>
           <li>Phone number se OTP login, address confirm, COD ya UPI se pay.</li>
           <li>Rider ko live map par track karein.</li>

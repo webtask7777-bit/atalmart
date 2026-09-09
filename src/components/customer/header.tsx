@@ -71,7 +71,7 @@ export function Header({ onSearch }: HeaderProps) {
 
   const pincodeLabel = (() => {
     if (!hydrated) return "Atal Nagar";
-    if (!userPincode) return "Tap to set";
+    if (!userPincode) return "Pincode set karo";
     // Precise sector from a location lookup wins over the generic pincode
     // label (all of 21–29 share 492101, so the generic label is a range).
     // Show just the sector — drop the ", Atal Nagar" suffix (covers values
