@@ -49,3 +49,4 @@ next-env.d.ts
 
 # Local editor/agent launch configs
 .claude/
+.cache/

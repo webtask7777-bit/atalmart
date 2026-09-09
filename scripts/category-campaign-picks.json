@@ -1,0 +1,88 @@
+{
+  "_comment": "Category campaign art (public/atalmart/category-banners/products/<slug>.webp). Each entry: [left, CENTRE, right] product image paths under the product-images bucket, from the live catalogue. Centre is drawn largest and in front. Rebuild with: python3 scripts/build-category-campaign-art.py",
+  "paan-corner": [
+    "24a3f694-2c9e-4013-a901-0c9ba9132e65/fop-0b7f4d8d.jpg",
+    "600aa5cb-1f24-489a-b6be-872c92326ea2/fop-4eeadea4.jpg",
+    "96c34586-11ec-4382-a38c-a8cc18bceb9e/fop-f5252d04.jpg"
+  ],
+  "dairy": [
+    "9f585e23-01e6-4ad7-9243-ddc176544312/02-13c8d803.png",
+    "88b506f0-ec61-4163-ab39-d4011465fcf0/fop-c42b2a10.png",
+    "06e2fecb-1396-490c-bb12-27a60efc9989/fop-36d78459.png"
+  ],
+  "fruits-vegetables": [
+    "d2769f2a-b87e-446c-b55e-4fac1057800f/fop-beeb8e85.webp",
+    "58e0939b-7d8f-4b07-941c-bb5003390173/fop-8185a6a3.webp",
+    "fbfd7faf-4bf5-4ba0-92c6-3426946ed83d/fop-23a9a96b.webp"
+  ],
+  "cold-drinks-juices": [
+    "bd0a9cc3-a5fd-4974-bdd2-0a2749ce8747/fop-bc687591.jpg",
+    "9e8e1194-4475-41f6-82e7-1af289a66179/fop-c9b05207.jpg",
+    "2e3bfc42-10df-44b0-82ce-6d9c37c6e302/fop-7e66f929.jpg"
+  ],
+  "snacks-munchies": [
+    "39b72cdd-2125-424a-88c7-389c06c4bf4d/fop-b4ea5fa6.jpg",
+    "8019d0de-c6d4-4cd0-ac37-f51278fd3e9f/fop-b17c21b1.jpg",
+    "06b6d780-abb3-438e-a584-131e88a9975e/fop-23e99959.jpg"
+  ],
+  "breakfast-instant": [
+    "b4d06041-ae69-4d78-a407-9e177e401629/fop-20796cc9.jpg",
+    "a8e89701-fa01-4a38-b88b-60eec8a9a975/fop-cfc5f6ed.jpg",
+    "eb0a7f69-02fc-409f-9085-074879bda517/fop-0b9bcec6.jpg"
+  ],
+  "chocolates-sweets": [
+    "f5362a25-eaa4-4064-958a-95509aa62895/fop-e453208d.jpg",
+    "d51aa4e8-fdba-4859-ab0f-b929b5d272f2/fop-b39a9d53.jpg",
+    "04d9aaca-1aee-4ad8-84df-924fffe02281/fop-81ebf9e5.jpg"
+  ],
+  "bakery-biscuits": [
+    "6b8d31d0-a9ce-464a-b819-6e0fe3e470b2/fop-a7bf0a01.jpg",
+    "0b85bba1-40d0-432f-a1c3-e0e8ebc43e1f/fop-3b173d85.jpg",
+    "10f96f73-3e62-474a-a873-5edc054c7130/fop-86a8e1d0.jpg"
+  ],
+  "tea-coffee": [
+    "d5f59f18-7b83-4696-95c7-688e3ea2bae5/fop-affd6c2e.jpg",
+    "ca22ec05-cab6-43f1-bd06-f8ea1db05e43/fop-6847ed8e.jpg",
+    "0e68ecc9-0f4b-44ec-a31e-bee8e90c3840/fop-7793cc72.jpg"
+  ],
+  "atta-rice-dal": [
+    "2377336f-e29c-40f9-907d-91c73ad8d153/fop-e0c40aaf.jpg",
+    "9258f450-1fde-43e2-acca-77c0874a354a/fop-cd2cbb73.webp",
+    "837c8490-908b-488e-af85-80a373b2ea7e/fop-92651847.jpg"
+  ],
+  "masala-oil": [
+    "2e44c38b-14ba-4789-b8e1-f617cb59e4e3/fop-ed4d1d79.jpg",
+    "e7ee4db8-c090-46e2-9aba-77cad5b4e2de/fop-ff5bc30c.jpg",
+    "e92ac01c-d971-4264-a126-5c7fb1b499e9/fop-25af38d4.jpg"
+  ],
+  "sauces-spreads": [
+    "1d0e2374-7d6d-43d9-9759-2d87f51e113f/fop-49c2b526.jpg",
+    "0b3cf7ea-6921-46c5-8acf-6e1aa5543a75/fop-b1203037.jpg",
+    "d72c530f-6608-4cda-a9a0-2f6f904c99a5/fop-29d067e1.jpg"
+  ],
+  "baby-care": [
+    "985941c6-a3a4-4b4e-8e5c-aa9a98e1c313/fop-f845354c.jpg",
+    "4092b439-2908-4eca-9724-422a638746dd/fop-ba34f13c.jpg",
+    "f43b5865-2868-423e-8d6d-b555e0ced819/fop-47d6577e.jpg"
+  ],
+  "pharma-wellness": [
+    "b4846f7f-9b04-479c-8ca7-7aed07ec5555/fop-a90ba979.jpg",
+    "b2bf745c-4d54-41d2-961e-0edb4f147b4e/fop-c4a65c31.jpg",
+    "f94eba52-e307-4642-b381-1e99a099b4e6/fop-fd7f4b8e.png"
+  ],
+  "cleaning-essentials": [
+    "f1e3ed26-f315-45e3-9719-ca1eb45121a4/fop-26b20c83.jpg",
+    "281fbbd1-80c8-4661-b346-09b98f322ee5/fop-6d11f756.jpg",
+    "611b17ff-a8b9-4e10-8c52-367d93dcb2c2/fop-8b1c1b76.jpg"
+  ],
+  "personal-care": [
+    "260bec0c-1149-489e-8293-daac9fafb145/fop-7162fdb7.jpg",
+    "a7f80d58-d0dd-408c-9246-b5c3574d1de1/fop-bb997178.jpg",
+    "792f812f-3913-4585-a343-00a1dd87b4a8/fop-3250a357.jpg"
+  ],
+  "pet-care": [
+    "fb2a6ff6-aab6-479a-966e-11d0615db027/fop-f9f74bb4.jpg",
+    "dda0737b-2e9c-4a9c-aab0-efe555f209e0/fop-1c78d5d6.jpg",
+    "fd0ea6e0-4ed2-49a0-b882-43c55e6b3b83/fop-e2f2b1c4.jpg"
+  ]
+}
