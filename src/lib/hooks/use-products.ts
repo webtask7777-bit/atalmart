@@ -34,19 +34,29 @@ export function useProducts(options?: {
   /** @deprecated Use categoryName. Kept for legacy callers. */
   categoryId?: string | null;
   search?: string;
+  /** Server-rendered catalogue (see src/lib/server/home-data.ts). Used as the
+   *  initial state for the unfiltered view, so the first render — including
+   *  the server HTML — already has products and no fetch runs until the
+   *  visitor filters or searches. */
+  initialData?: { products: Product[]; categories: Category[] } | null;
 }) {
+  const unfiltered = !options?.categoryName && !options?.categoryId && !options?.search;
+  const seeded = !!options?.initialData && unfiltered;
   const [products, setProducts] = useState<Product[]>(() => {
+    if (options?.initialData && unfiltered) return options.initialData.products;
     // Render featured immediately for the homepage / "All" mode so the grid
     // doesn't flash empty while the lazy chunks load.
-    if (isDemoMode() && !options?.categoryName && !options?.categoryId && !options?.search) {
+    if (isDemoMode() && unfiltered) {
       return mergeRuntime(featuredProducts);
     }
     return [];
   });
-  const [categories, setCategories] = useState<Category[]>(
-    isDemoMode() ? demoCategories : [],
+  const [categories, setCategories] = useState<Category[]>(() =>
+    options?.initialData ? options.initialData.categories : isDemoMode() ? demoCategories : [],
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!seeded);
+  // The seeded view skips its first fetch; later option changes fetch normally.
+  const skipFirstFetchRef = useRef(seeded);
 
   // Latest-only guard: when categoryId or search changes mid-fetch, we want
   // the older awaiter to drop its result instead of overwriting the newer
@@ -168,6 +178,10 @@ export function useProducts(options?: {
   }, [options?.categoryId, options?.categoryName, options?.search]);
 
   useEffect(() => {
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
     fetchProducts();
   }, [fetchProducts]);
 
@@ -353,11 +367,12 @@ export async function deleteProduct(id: string) {
  * against `String(i+1)` instead of the real UUID was silently producing
  * 0-count badges and a blank Category column.
  */
-export function useCategories() {
+export function useCategories(initial?: Category[] | null) {
   const [categories, setCategories] = useState<Category[]>(() =>
-    isDemoMode() ? demoCategories : [],
+    initial && initial.length > 0 ? initial : isDemoMode() ? demoCategories : [],
   );
-  const [loading, setLoading] = useState<boolean>(!isDemoMode());
+  const [loading, setLoading] = useState<boolean>(!isDemoMode() && !(initial && initial.length > 0));
+  const skipFirstFetchRef = useRef(!!(initial && initial.length > 0));
 
   const fetchCategories = useCallback(async () => {
     if (isDemoMode()) {
@@ -377,6 +392,10 @@ export function useCategories() {
   }, []);
 
   useEffect(() => {
+    if (skipFirstFetchRef.current) {
+      skipFirstFetchRef.current = false;
+      return;
+    }
     fetchCategories();
   }, [fetchCategories]);
 

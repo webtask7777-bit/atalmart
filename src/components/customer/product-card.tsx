@@ -89,10 +89,13 @@ export function ProductCard({ product }: ProductCardProps) {
           <Image
             src={product.image_url}
             alt={product.name}
-            fill
-            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 20vw"
+            // Fixed size (not `fill` + sizes): cards render at 150–190 CSS px,
+            // and a fixed size emits a 2-candidate srcset instead of 12 —
+            // ~1.5 KB less HTML per card when the home is server-rendered.
+            width={320}
+            height={320}
             fetchPriority="low"
-            className={`object-contain p-3 group-hover:scale-105 transition-transform duration-200 ${outOfStock ? "opacity-50" : ""}`}
+            className={`absolute inset-0 w-full h-full object-contain p-3 group-hover:scale-105 transition-transform duration-200 ${outOfStock ? "opacity-50" : ""}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl">

@@ -83,12 +83,12 @@ export function CategoryGrid({
                   <Image
                     src={thumb}
                     alt={`${cat.name} shop`}
-                    fill
-                    sizes="(max-width: 640px) 22vw, (max-width: 1024px) 12vw, 9vw"
+                    width={208}
+                    height={208}
                     // Only the first row competes at normal priority; the rest
                     // yield bandwidth to the hero image and the JS that hydrates.
                     fetchPriority={index < 4 ? undefined : "low"}
-                    className="object-contain p-1 group-hover:scale-[1.04] transition-transform duration-200"
+                    className="absolute inset-0 w-full h-full object-contain p-1 group-hover:scale-[1.04] transition-transform duration-200"
                   />
                 ) : (
                   <CategoryIcon

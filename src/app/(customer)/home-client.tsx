@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import type { Product as CatalogueProduct, Category as CatalogueCategory } from "@/types";
 import { ChevronDown } from "lucide-react";
 import { ProductCard } from "@/components/customer/product-card";
 import { CategoryBar } from "@/components/customer/category-bar";
@@ -103,45 +104,46 @@ const QUICK_SEARCHES: { key: string; label: string }[] = [
 /** "All products" renders in pages so the DOM (and image count) stays sane. */
 const GRID_PAGE = 30;
 
-export default function HomeClient() {
-  // HomeContent reads useSearchParams, which bails static prerendering out
-  // to this Suspense fallback. So the fallback IS the server-rendered HTML:
-  // it must contain the above-the-fold layout (category strip, hero, promise
-  // tiles, category grid) or the first paint is a bare skeleton and the LCP
-  // waits for hydration + the catalogue fetch. Same components, same
-  // classes — after hydration HomeContent swaps in without a visual jump.
-  return (
-    <Suspense fallback={<HomeStaticShell />}>
-      <HomeContent />
-    </Suspense>
-  );
+interface HomeClientProps {
+  /** Catalogue rendered on the server (ISR) — see src/lib/server/home-data.ts.
+   *  Undefined when the server couldn't read Supabase; the hooks then fetch. */
+  initialProducts?: CatalogueProduct[];
+  initialCategories?: CatalogueCategory[];
 }
 
-function HomeStaticShell() {
-  const settings = useSettings();
-  const noop = () => {};
-  return (
-    <div className="max-w-7xl mx-auto px-4 pb-32">
-      <div className="sticky z-30 -mx-4 px-4 bg-white border-b border-gray-100" style={{ top: "var(--header-h, 64px)" }}>
-        <CategoryBar selected={null} onSelect={noop} />
-      </div>
-      <QuickSearches />
-      <HeroCarousel />
-      <section className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
-        <PromiseTile iconSrc="/icons/trust/quick-delivery.svg" title="Quick" subtitle="delivery" />
-        <PromiseTile iconSrc="/icons/trust/free-delivery.svg" title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
-        <PromiseTile iconSrc="/icons/trust/genuine.svg" title="100%" subtitle="genuine" />
-      </section>
-      <CategoryGrid selected={null} onSelect={noop} categoryThumbs={CATEGORY_COVERS} />
-      <div className="mt-6">
-        <ProductGridSkeleton count={10} />
-      </div>
-    </div>
+export default function HomeClient({ initialProducts, initialCategories }: HomeClientProps) {
+  const initialData = useMemo(
+    () =>
+      initialProducts && initialCategories
+        ? { products: initialProducts, categories: initialCategories }
+        : null,
+    [initialProducts, initialCategories],
   );
+  return <HomeContent initialData={initialData} />;
 }
 
-function HomeContent() {
+/**
+ * The only place the home reads the URL. `useSearchParams` makes its nearest
+ * Suspense boundary client-rendered during static prerendering, so it lives
+ * in this tiny subtree: the rest of the home is rendered on the server and
+ * ?search= / ?category= are applied right after hydration.
+ */
+function SearchParamsBridge({ onChange }: { onChange: (params: string) => void }) {
   const searchParams = useSearchParams();
+  const serialised = searchParams.toString();
+  useEffect(() => {
+    onChange(serialised);
+  }, [serialised, onChange]);
+  return null;
+}
+
+function HomeContent({
+  initialData,
+}: {
+  initialData: { products: CatalogueProduct[]; categories: CatalogueCategory[] } | null;
+}) {
+  const [urlParams, setUrlParams] = useState("");
+  const searchParams = useMemo(() => new URLSearchParams(urlParams), [urlParams]);
   const router = useRouter();
   const urlSearch = searchParams.get("search") || "";
   // ?category=<name> deep-links straight into a category (used by the
@@ -190,8 +192,9 @@ function HomeContent() {
   const { products, loading } = useProducts({
     categoryName: selectedCategory,
     search: debouncedSearch || undefined,
+    initialData,
   });
-  const { categories } = useCategories();
+  const { categories } = useCategories(initialData?.categories);
 
   const { user } = useAuth();
 
@@ -288,6 +291,9 @@ function HomeContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
+      <Suspense fallback={null}>
+        <SearchParamsBridge onChange={setUrlParams} />
+      </Suspense>
       {/* Sticky category strip (compact) */}
       <div className="sticky z-30 -mx-4 px-4 bg-white border-b border-gray-100" style={{ top: "var(--header-h, 64px)" }}>
         <CategoryBar
