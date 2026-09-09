@@ -12,7 +12,6 @@ import {
   IndianRupee,
   Target,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 import { useCampaignsStore } from "@/lib/store/campaigns";
 import { useCampaignAnalyticsStore } from "@/lib/store/acquisition";
@@ -262,22 +261,6 @@ export default function MarketingDashboardPage() {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-brown">Coupons</p>
             <p className="text-xs text-gray-500">{coupons.length} active</p>
-          </div>
-          <ArrowRight
-            size={16}
-            className="text-gray-300 group-hover:text-saffron"
-          />
-        </Link>
-        <Link
-          href="/admin/banners"
-          className="bg-white border border-gray-100 hover:border-saffron rounded-2xl p-4 flex items-center gap-3 group transition-colors"
-        >
-          <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center">
-            <Sparkles size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-brown">Hero Banners</p>
-            <p className="text-xs text-gray-500">Home page promos</p>
           </div>
           <ArrowRight
             size={16}

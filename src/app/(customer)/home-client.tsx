@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useState, useMemo, useEffect, useCallback, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import type { Product as CatalogueProduct, Category as CatalogueCategory } from "@/types";
@@ -15,15 +15,18 @@ import {
   useAgeGateHydrated,
   isAgeRestricted,
 } from "@/lib/store/age-gate";
-import { HeroCarousel } from "@/components/customer/hero-carousel";
+import { AtalmartHomeHero } from "@/components/home/AtalmartHomeHero";
+import { CategoryPromoBanner } from "@/components/home/CategoryPromoBanner";
+import { categoryBanners } from "@/data/category-banners";
 import dynamic from "next/dynamic";
 import { PopatStaticBanner } from "@/components/popat/PopatStaticBanner";
 // Below-the-fold, client-only sections: loaded after the shell hydrates so
 // their code doesn't sit on the first-paint path.
 const PopatHero = dynamic(() => import("@/components/popat/PopatHero").then((m) => m.PopatHero), { ssr: false });
 const BrandRail = dynamic(() => import("@/components/customer/brand-rail").then((m) => m.BrandRail), { ssr: false });
-import { QUICK_SPRITE } from "@/lib/category-icons";
-import { ProductRail } from "@/components/customer/product-rail";
+import { CATEGORY_SLUGS, QUICK_SPRITE } from "@/lib/category-icons";
+import { ProductRail, RailArrow } from "@/components/customer/product-rail";
+import { useRailScroll } from "@/lib/hooks/use-rail-scroll";
 import { CartBar } from "@/components/customer/cart-bar";
 import { ProductGridSkeleton } from "@/components/ui/skeleton";
 import { useProducts, useCategories } from "@/lib/hooks/use-products";
@@ -305,15 +308,15 @@ function HomeContent({
 
       {!isFiltered && <QuickSearches />}
 
-      {/* Hero carousel — only when not filtering */}
-      {!isFiltered && <HeroCarousel />}
-
-      {/* Promise strip (compact) */}
-      <section className="mt-4 grid grid-cols-3 gap-2 md:gap-3">
-        <PromiseTile iconSrc="/icons/trust/quick-delivery.svg" title="Quick" subtitle="delivery" />
-        <PromiseTile iconSrc="/icons/trust/free-delivery.svg" title={`₹${settings.freeDeliveryAbove}+`} subtitle="free delivery" />
-        <PromiseTile iconSrc="/icons/trust/genuine.svg" title="100%" subtitle="genuine" />
-      </section>
+      {/* Offer carousel + service promises (atalmart-hero-benefits-premium-v1;
+          copy lives in src/data/hero-slides.ts) — only when not filtering */}
+      {!isFiltered && (
+        <AtalmartHomeHero
+          className="mt-3"
+          freeDeliveryAbove={settings.freeDeliveryAbove}
+          deliveryFee={settings.deliveryFee}
+        />
+      )}
 
       {!isFiltered && (
         <CategoryGrid
@@ -445,6 +448,7 @@ function HomeContent({
 
           {rails.dailyEssentials.length > 0 && (
             <ProductRail
+              id="daily-essentials"
               title="Daily essentials"
               subtitle="Roz ki zarurat ka saamaan"
               emoji="🛒"
@@ -477,7 +481,7 @@ function HomeContent({
             />
           )}
 
-          <FeatureBanner />
+          <CategoryCampaigns emptyCategories={emptyCategories} />
 
           {rails.beverages.length > 0 && (
             <ProductRail
@@ -685,79 +689,53 @@ function buildRails(products: Product[], categories: Category[]) {
 // Stable shuffle helper lives in src/lib/product-order.ts so the product
 // detail page can reuse the same ordering for its "You may also like" list.
 
-/**
- * Benefit tile with an animated SVG icon (atalmart-trust-benefits-animated-
- * svg-v1). The animation lives inside the SVG file (CSS keyframes, long idle
- * phases, static under prefers-reduced-motion), so a plain <img> is enough.
- */
-function PromiseTile({
-  iconSrc,
-  title,
-  subtitle,
-}: {
-  iconSrc: string;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="group bg-saffron-light rounded-xl p-2 md:p-2.5 flex items-center gap-1.5 md:gap-2 border border-orange-100">
-      <div className="w-8 h-8 md:w-9 md:h-9 bg-white rounded-lg flex items-center justify-center shrink-0 ring-1 ring-black/[0.035]">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={iconSrc}
-          width={32}
-          height={32}
-          alt=""
-          aria-hidden="true"
-          decoding="async"
-          draggable={false}
-          className="w-7 h-7 md:w-8 md:h-8 motion-safe:transition-transform motion-safe:duration-200 motion-safe:group-hover:scale-110"
-        />
-      </div>
-      <div className="leading-tight min-w-0">
-        <p className="text-[11px] md:text-[12px] font-bold text-brown whitespace-nowrap">
-          {title}
-        </p>
-        <p className="text-[10px] text-brown-light truncate">{subtitle}</p>
-      </div>
-    </div>
-  );
-}
+// Category campaigns (atalmart-hero-benefits-premium-v1): live-text banners
+// with real product collages, one per storefront category. Copy, palettes and
+// art live in src/data/category-banners.ts; the order below is the home
+// rotation. Coming-soon categories and ones with no stock are skipped.
+const CAMPAIGN_ORDER = [
+  "personal-care",
+  "pharma-wellness",
+  "baby-care",
+  "cleaning-essentials",
+  "pet-care",
+  "dairy",
+  "snacks-munchies",
+  "tea-coffee",
+];
+const SLUG_TO_CATEGORY: Record<string, string> = Object.fromEntries(
+  Object.entries(CATEGORY_SLUGS).map(([name, slug]) => [slug, name]),
+);
 
-function FeatureBanner() {
+function CategoryCampaigns({ emptyCategories }: { emptyCategories?: Set<string> }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const { canLeft, canRight, scrollByPage } = useRailScroll(railRef);
+  const banners = CAMPAIGN_ORDER.map((id) => categoryBanners.find((b) => b.id === id))
+    .filter(
+      (b): b is (typeof categoryBanners)[number] =>
+        !!b &&
+        b.availability !== "coming-soon" &&
+        !emptyCategories?.has(SLUG_TO_CATEGORY[b.id] ?? ""),
+    )
+    .slice(0, 6);
+  if (banners.length === 0) return null;
   return (
-    <section className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div className="bg-gradient-to-br from-indian-green via-green-600 to-emerald-700 rounded-2xl p-5 text-white relative overflow-hidden">
-        <div className="relative z-10 max-w-xs">
-          <p className="text-[10px] font-bold bg-white/20 inline-block px-2 py-0.5 rounded mb-2 tracking-wide">
-            FIRST ORDER
-          </p>
-          <h3 className="text-lg font-bold leading-tight">₹50 off your first order</h3>
-          <p className="text-xs opacity-90 mt-1">Use code ATAL50 on ₹199+ orders</p>
-          <span className="mt-3 inline-block bg-white text-indian-green text-xs font-bold px-3 py-1.5 rounded-lg">
-            Apply now →
-          </span>
-        </div>
-        <div className="absolute -right-4 -bottom-4 text-7xl opacity-30 select-none">
-          🎁
-        </div>
+    <section className="mt-6 relative" aria-label="Category campaigns">
+      <div
+        ref={railRef}
+        className="rail-x flex gap-3 -mx-4 px-4 scroll-pl-4 md:mx-0 md:px-0 md:scroll-pl-0"
+      >
+        {banners.map((banner) => (
+          <div
+            key={banner.id}
+            className="@container snap-start shrink-0 w-[88vw] max-w-[560px] md:w-[calc(50%-6px)] md:max-w-none"
+          >
+            <CategoryPromoBanner banner={banner} className="h-full" />
+          </div>
+        ))}
       </div>
-
-      <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-2xl p-5 text-white relative overflow-hidden">
-        <div className="relative z-10 max-w-xs">
-          <p className="text-[10px] font-bold bg-white/20 inline-block px-2 py-0.5 rounded mb-2 tracking-wide">
-            FREE DELIVERY
-          </p>
-          <h3 className="text-lg font-bold leading-tight">Spend ₹299, save ₹25</h3>
-          <p className="text-xs opacity-90 mt-1">Free delivery on every order above ₹299</p>
-          <span className="mt-3 inline-block bg-white text-saffron-deep text-xs font-bold px-3 py-1.5 rounded-lg">
-            Browse →
-          </span>
-        </div>
-        <div className="absolute -right-4 -bottom-4 text-7xl opacity-30 select-none">
-          🚚
-        </div>
-      </div>
+      <RailArrow dir="left" visible={canLeft} onClick={() => scrollByPage("left")} />
+      <RailArrow dir="right" visible={canRight} onClick={() => scrollByPage("right")} />
     </section>
   );
 }

@@ -8,6 +8,8 @@ import { ProductCard } from "@/components/customer/product-card";
 import type { Product } from "@/types";
 
 interface ProductRailProps {
+  /** DOM id so links can anchor to the rail (e.g. /#daily-essentials). */
+  id?: string;
   title: string;
   subtitle?: string;
   emoji?: string;
@@ -31,6 +33,7 @@ const ACCENT: Record<
 };
 
 export function ProductRail({
+  id,
   title,
   subtitle,
   emoji,
@@ -49,6 +52,7 @@ export function ProductRail({
 
   return (
     <section
+      id={id}
       className={`mt-6 relative rounded-3xl bg-gradient-to-b ${colors.from} ${colors.to} pt-4 pb-2 px-3 md:px-4`}
     >
       <div className="flex items-end justify-between mb-3 px-1">

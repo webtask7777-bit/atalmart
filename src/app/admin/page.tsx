@@ -12,7 +12,6 @@ import {
   Plus,
   Package,
   Tag,
-  Image as ImageIcon,
   Users,
   AlertTriangle,
   ArrowRight,
@@ -47,7 +46,6 @@ function timeAgo(dateStr: string) {
 
 const QUICK_ACTIONS = [
   { href: "/admin/products", label: "Add Product", icon: Package, color: "bg-blue-50 text-blue-600" },
-  { href: "/admin/banners", label: "New Banner", icon: ImageIcon, color: "bg-purple-50 text-purple-600" },
   { href: "/admin/coupons", label: "Create Coupon", icon: Tag, color: "bg-green-light text-indian-green" },
   { href: "/admin/customers", label: "View Customers", icon: Users, color: "bg-amber-50 text-amber-600" },
 ];

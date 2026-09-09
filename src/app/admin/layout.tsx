@@ -12,7 +12,6 @@ import {
   Download,
   BarChart3,
   Activity,
-  Image as ImageIcon,
   Tag,
   Settings,
   Users,
@@ -65,7 +64,6 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/admin/marketing", label: "Dashboard", icon: Megaphone },
       { href: "/admin/campaigns", label: "Campaigns + QR", icon: QrCode },
-      { href: "/admin/banners", label: "Hero Banners", icon: ImageIcon },
       { href: "/admin/coupons", label: "Coupons", icon: Tag },
     ],
   },

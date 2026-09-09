@@ -1,0 +1,413 @@
+/* Breakpoints are container queries: the parent must set container-type
+   (Tailwind `@container`) — see CategoryCampaigns in home-client.tsx. */
+.banner {
+  --banner-a: #174c37;
+  --banner-b: #23724e;
+  --banner-c: #d07323;
+  --banner-accent: #ffe7a8;
+  --banner-glow: #ffd68a;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: 310px;
+  overflow: hidden;
+  grid-template-columns: minmax(0, 1.08fr) minmax(280px, 0.92fr);
+  align-items: center;
+  gap: clamp(18px, 3vw, 48px);
+  padding: 36px clamp(36px, 4.6vw, 70px) 42px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 84% 17%, color-mix(in srgb, var(--banner-glow) 43%, transparent), transparent 30%),
+    linear-gradient(120deg, var(--banner-a), var(--banner-b) 58%, var(--banner-c));
+  box-shadow:
+    0 20px 50px rgba(28, 38, 32, 0.15),
+    inset 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.dotField {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.16;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.78) 0.8px, transparent 0.8px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(90deg, transparent 12%, #000 55%, #000);
+}
+
+.orbit {
+  position: absolute;
+  right: -9%;
+  bottom: -79%;
+  z-index: -1;
+  width: 51%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 34px rgba(255, 255, 255, 0.035),
+    0 0 0 72px rgba(255, 255, 255, 0.022);
+}
+
+.copy {
+  position: relative;
+  z-index: 3;
+  max-width: 610px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.27);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.14);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  backdrop-filter: blur(10px);
+}
+
+.title {
+  max-width: 620px;
+  margin: 16px 0 0;
+  font-size: clamp(34px, 3.3vw, 51px);
+  font-weight: 850;
+  line-height: 1.01;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(24, 20, 15, 0.13);
+}
+
+.title span {
+  display: block;
+  color: var(--banner-accent);
+}
+
+.description {
+  max-width: 530px;
+  margin: 14px 0 0;
+  color: rgba(255, 255, 255, 0.87);
+  font-size: clamp(14px, 1.15vw, 17px);
+  font-weight: 520;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.cta,
+.disabledCta {
+  display: inline-flex;
+  min-height: 45px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 17px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 13px;
+  color: #173c2b;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(28, 25, 18, 0.15);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.cta span {
+  font-size: 18px;
+  transition: transform 180ms ease;
+}
+
+.cta:hover {
+  box-shadow: 0 14px 30px rgba(28, 25, 18, 0.21);
+  transform: translateY(-2px);
+}
+
+.cta:hover span {
+  transform: translateX(2px);
+}
+
+.cta:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.disabledCta {
+  cursor: not-allowed;
+  opacity: 0.82;
+}
+
+.badge {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.note {
+  display: block;
+  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.art {
+  position: relative;
+  min-height: 235px;
+  align-self: stretch;
+}
+
+.glow {
+  position: absolute;
+  top: 50%;
+  right: 7%;
+  width: 270px;
+  height: 230px;
+  border-radius: 45% 55% 62% 38% / 47% 42% 58% 53%;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.96),
+    color-mix(in srgb, var(--banner-glow) 68%, #fff)
+  );
+  box-shadow:
+    0 26px 55px rgba(19, 24, 20, 0.18),
+    inset 0 1px rgba(255, 255, 255, 0.85);
+  transform: translateY(-50%) rotate(-5deg);
+}
+
+/* Transparent product cutouts (public/atalmart/category-banners/products)
+   float over the glow blob — no white frame. */
+.productFrame {
+  position: absolute;
+  top: 50%;
+  right: 6%;
+  width: 274px;
+  height: 235px;
+  transform: translateY(-50%) rotate(2deg);
+  animation: productFloat 5.8s ease-in-out infinite;
+}
+
+.productImage {
+  padding: 4px;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 22px rgba(10, 20, 16, 0.32));
+}
+
+.freshChip {
+  position: absolute;
+  right: 48%;
+  bottom: 2px;
+  z-index: 3;
+  max-width: 190px;
+  overflow: hidden;
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: #173c2b;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 11px 24px rgba(24, 29, 25, 0.16);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes productFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -7px; }
+}
+
+@container (max-width: 820px) {
+  .banner {
+    grid-template-columns: minmax(0, 1fr) minmax(245px, 0.76fr);
+    padding-inline: 34px;
+  }
+
+  .title {
+    font-size: 38px;
+  }
+
+  .glow,
+  .productFrame {
+    right: 1%;
+    width: 230px;
+    height: 215px;
+  }
+}
+
+/* Compact side-by-side (560–760px boxes: the 2-up desktop rail). */
+@container (max-width: 760px) {
+  .banner {
+    min-height: 250px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(200px, 0.95fr);
+    gap: 16px;
+    padding: 24px 26px 26px;
+  }
+
+  .eyebrow {
+    min-height: 24px;
+    padding: 5px 9px;
+    font-size: 9.5px;
+  }
+
+  .title {
+    margin-top: 12px;
+    font-size: 29px;
+    line-height: 1.04;
+  }
+
+  .description {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .cta,
+  .disabledCta {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+
+  .badge {
+    font-size: 10.5px;
+  }
+
+  .note {
+    margin-top: 8px;
+    font-size: 10px;
+  }
+
+  .art {
+    min-height: 200px;
+  }
+
+  .glow,
+  .productFrame {
+    right: 0;
+    width: 200px;
+    height: 185px;
+  }
+
+  .freshChip {
+    max-width: 140px;
+    padding: 7px 10px;
+    font-size: 9.5px;
+  }
+}
+
+@container (max-width: 560px) {
+  .banner {
+    min-height: 455px;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 160px;
+    align-items: start;
+    gap: 7px;
+    padding: 24px 20px 45px;
+    border-radius: 20px;
+  }
+
+  .dotField {
+    mask-image: linear-gradient(180deg, transparent 7%, #000 45%, #000);
+  }
+
+  .eyebrow {
+    min-height: 25px;
+    padding: 5px 9px;
+    font-size: 9px;
+  }
+
+  .title {
+    margin-top: 12px;
+    font-size: clamp(29px, 8.4vw, 35px);
+    line-height: 1.03;
+  }
+
+  .description {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.43;
+  }
+
+  .actions {
+    gap: 11px;
+    margin-top: 15px;
+  }
+
+  .cta,
+  .disabledCta {
+    min-height: 41px;
+    padding: 0 14px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+
+  .badge {
+    max-width: 122px;
+    font-size: 9.5px;
+    line-height: 1.3;
+  }
+
+  .note {
+    margin-top: 7px;
+    font-size: 9px;
+  }
+
+  .art {
+    min-height: 160px;
+  }
+
+  .glow,
+  .productFrame {
+    top: 47%;
+    right: 50%;
+    width: 185px;
+    height: 165px;
+  }
+
+  .glow {
+    transform: translate(50%, -50%) rotate(-5deg);
+  }
+
+  .productFrame {
+    transform: translate(50%, -50%) rotate(2deg);
+  }
+
+  .freshChip {
+    right: calc(50% + 30px);
+    bottom: -4px;
+    max-width: 132px;
+    padding: 7px 10px;
+    font-size: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .productFrame {
+    animation: none;
+  }
+
+  .cta,
+  .cta span {
+    transition: none;
+  }
+}

@@ -1,0 +1,551 @@
+/* Home offer carousel (atalmart-hero-benefits-premium-v1, restyled): every
+   slide is live text + real catalogue packshots (transparent cutouts in
+   public/atalmart/hero/products) floating on a tone gradient, the way the
+   Popat slide in the pack was built. */
+
+.hero {
+  --hero-a: #0d5b39;
+  --hero-b: #128353;
+  --hero-c: #19a467;
+  --hero-glow: rgba(255, 209, 134, 0.38);
+  position: relative;
+  isolation: isolate;
+  min-height: 365px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 83% 26%, var(--hero-glow), transparent 28%),
+    linear-gradient(118deg, var(--hero-a) 0%, var(--hero-b) 62%, var(--hero-c) 100%);
+  box-shadow:
+    0 22px 54px rgba(25, 45, 34, 0.15),
+    0 3px 10px rgba(25, 45, 34, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.22);
+  outline: none;
+}
+
+.hero[data-tone="forest"] {
+  --hero-a: #0a4f34;
+  --hero-b: #0e7248;
+  --hero-c: #19a264;
+  --hero-glow: rgba(255, 213, 145, 0.34);
+}
+
+.hero[data-tone="offer"] {
+  --hero-a: #bd3d0c;
+  --hero-b: #f05d18;
+  --hero-c: #ff923d;
+  --hero-glow: rgba(255, 238, 172, 0.44);
+}
+
+.hero[data-tone="emerald"] {
+  --hero-a: #075545;
+  --hero-b: #087b62;
+  --hero-c: #15a77b;
+  --hero-glow: rgba(194, 255, 220, 0.3);
+}
+
+.hero[data-tone="atta"] {
+  --hero-a: #b92d0c;
+  --hero-b: #ef4b0d;
+  --hero-c: #ff800d;
+  --hero-glow: rgba(255, 223, 131, 0.54);
+}
+
+.hero[data-tone="popat"] {
+  --hero-a: #67121b;
+  --hero-b: #971b24;
+  --hero-c: #d13a2e;
+  --hero-glow: rgba(255, 210, 78, 0.32);
+}
+
+.hero::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  opacity: 0.18;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.72) 0.8px, transparent 0.8px);
+  background-size: 20px 20px;
+  mask-image: linear-gradient(90deg, transparent 15%, #000 65%, #000);
+}
+
+.hero::after {
+  position: absolute;
+  right: -9%;
+  bottom: -58%;
+  z-index: -1;
+  width: 48%;
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  content: "";
+  box-shadow:
+    0 0 0 34px rgba(255, 255, 255, 0.035),
+    0 0 0 70px rgba(255, 255, 255, 0.025);
+}
+
+.ambientOne,
+.ambientTwo {
+  position: absolute;
+  z-index: -1;
+  border-radius: 999px;
+  filter: blur(2px);
+  pointer-events: none;
+}
+
+.ambientOne {
+  top: -110px;
+  left: 38%;
+  width: 270px;
+  height: 270px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ambientTwo {
+  right: 17%;
+  bottom: -130px;
+  width: 310px;
+  height: 310px;
+  background: rgba(255, 188, 81, 0.12);
+}
+
+.slide {
+  display: grid;
+  min-height: 365px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  align-items: center;
+  gap: clamp(20px, 3vw, 56px);
+  padding: 42px clamp(54px, 5vw, 82px) 55px;
+  animation: slideIn 420ms cubic-bezier(0.22, 0.8, 0.28, 1) both;
+}
+
+.content {
+  position: relative;
+  z-index: 3;
+  max-width: 610px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.93);
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.14);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(10px);
+}
+
+.title {
+  max-width: 610px;
+  margin: 17px 0 0;
+  color: #fff;
+  font-size: clamp(34px, 3.2vw, 51px);
+  font-weight: 850;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+  text-shadow: 0 2px 18px rgba(30, 20, 10, 0.13);
+}
+
+.title span {
+  display: block;
+  color: #fff1c6;
+}
+
+.description {
+  max-width: 540px;
+  margin: 16px 0 0;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: clamp(14px, 1.15vw, 17px);
+  font-weight: 520;
+  line-height: 1.55;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 24px;
+}
+
+.primaryCta {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 13px;
+  color: #153325;
+  background: #fff;
+  box-shadow:
+    0 10px 24px rgba(38, 22, 8, 0.15),
+    inset 0 -1px rgba(0, 0, 0, 0.05);
+  font-size: 14px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.primaryCta span {
+  font-size: 18px;
+  transition: transform 180ms ease;
+}
+
+.primaryCta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(38, 22, 8, 0.2);
+}
+
+.primaryCta:hover span {
+  transform: translateX(2px);
+}
+
+.primaryCta:focus-visible,
+.arrow:focus-visible,
+.dots button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+}
+
+.meta {
+  color: rgba(255, 255, 255, 0.77);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.art {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 285px;
+  align-self: stretch;
+}
+
+/* Three packshots: a big centre pack, two tilted side packs, one badge. */
+.packArt {
+  position: absolute;
+  inset: 0;
+}
+
+.pack {
+  position: absolute;
+  bottom: -15px;
+  filter: drop-shadow(0 22px 18px rgba(20, 10, 6, 0.32));
+  animation: floatMain 5.8s ease-in-out infinite;
+}
+
+.pack img {
+  object-fit: contain;
+  object-position: bottom;
+}
+
+.packLeft {
+  left: 10px;
+  width: 165px;
+  height: 245px;
+  transform: rotate(-9deg);
+  animation-delay: -1.3s;
+}
+
+.packCenter {
+  right: 92px;
+  z-index: 3;
+  width: 205px;
+  height: 285px;
+}
+
+.packRight {
+  right: -14px;
+  width: 160px;
+  height: 235px;
+  transform: rotate(9deg);
+  animation-delay: -2.4s;
+}
+
+.artBadge {
+  position: absolute;
+  right: 5px;
+  bottom: 7px;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  color: var(--hero-a);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 11px 24px rgba(31, 28, 20, 0.16);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 8;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(20, 20, 20, 0.14);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-50%);
+  backdrop-filter: blur(10px);
+  transition: opacity 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.hero:hover .arrow,
+.arrow:focus-visible {
+  opacity: 1;
+}
+
+.arrow:hover {
+  background: rgba(255, 255, 255, 0.19);
+}
+
+.arrow svg {
+  width: 19px;
+  height: 19px;
+}
+
+.arrowLeft {
+  left: 14px;
+}
+
+.arrowRight {
+  right: 14px;
+}
+
+.dots {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transform: translateX(-50%);
+}
+
+.dots button {
+  display: grid;
+  width: 26px;
+  height: 24px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dots span {
+  display: block;
+  width: 6px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  transition: width 220ms ease, background 220ms ease;
+}
+
+.dot {
+  opacity: 0.92;
+}
+
+.dot:hover span {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.activeDot span {
+  width: 25px;
+  background: #fff;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes floatMain {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -7px; }
+}
+
+/* Tablets and small laptops: the art column is ~300–400px, not ~500px. */
+@media (max-width: 1024px) {
+  /* Narrower art column: fan the side packs out so each peeks past the
+     centre pack instead of hiding behind it. */
+  .packLeft {
+    left: -12px;
+    width: 118px;
+    height: 178px;
+  }
+
+  .packCenter {
+    right: 58px;
+    width: 152px;
+    height: 218px;
+  }
+
+  .packRight {
+    right: -26px;
+    width: 112px;
+    height: 172px;
+  }
+}
+
+@media (max-width: 820px) {
+  .slide {
+    grid-template-columns: minmax(0, 1fr) minmax(255px, 0.75fr);
+    padding-inline: 46px;
+  }
+
+  .title {
+    font-size: 38px;
+  }
+
+}
+
+@media (max-width: 640px) {
+  .hero,
+  .slide {
+    min-height: 455px;
+  }
+
+  .hero {
+    border-radius: 20px;
+  }
+
+  .hero::before {
+    mask-image: linear-gradient(180deg, transparent 8%, #000 45%, #000);
+  }
+
+  .slide {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 155px;
+    align-items: start;
+    gap: 6px;
+    padding: 25px 20px 52px;
+  }
+
+  .content {
+    max-width: 100%;
+  }
+
+  .eyebrow {
+    min-height: 25px;
+    padding: 5px 9px;
+    font-size: 9px;
+  }
+
+  .title {
+    margin-top: 12px;
+    font-size: clamp(29px, 8.4vw, 35px);
+    line-height: 1.04;
+  }
+
+  .description {
+    max-width: 350px;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .actions {
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .primaryCta {
+    min-height: 41px;
+    padding: 0 14px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+
+  .meta {
+    max-width: 126px;
+    font-size: 9.5px;
+    line-height: 1.3;
+  }
+
+  .art {
+    min-height: 155px;
+  }
+
+  .pack {
+    bottom: -6px;
+  }
+
+  .packLeft {
+    left: calc(50% - 129px);
+    width: 94px;
+    height: 148px;
+  }
+
+  .packCenter {
+    right: calc(50% - 55px);
+    width: 111px;
+    height: 165px;
+  }
+
+  .packRight {
+    right: calc(50% - 130px);
+    width: 91px;
+    height: 142px;
+  }
+
+  .artBadge {
+    right: calc(50% - 150px);
+    bottom: -3px;
+    padding: 7px 10px;
+    font-size: 8px;
+  }
+
+  .arrow {
+    display: none;
+  }
+
+  .dots {
+    bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide,
+  .pack {
+    animation: none !important;
+  }
+
+  .primaryCta,
+  .primaryCta span,
+  .arrow,
+  .dots span {
+    transition: none !important;
+  }
+}
