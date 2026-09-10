@@ -32,6 +32,11 @@ interface CreateOrderInput {
   walletApplied?: number;
   /** Delivery pincode — feeds coupon pincode rules in server pricing. */
   pincode?: string;
+  /** Delivery pin, when the saved address carries one. Beats the pincode
+   *  on the server: a pin outside every sector is refused even if the typed
+   *  pincode is serviceable. */
+  lat?: number | null;
+  lng?: number | null;
   /** Razorpay proof for online orders. Required (server-side) when
    *  payment_method === "online" and the amount owed is > 0. */
   payment?: {
@@ -321,6 +326,8 @@ export async function createOrder(input: CreateOrderInput): Promise<{ data: Orde
         couponCode: input.coupon_code,
         walletApplied: input.walletApplied,
         pincode: input.pincode,
+        lat: input.lat ?? null,
+        lng: input.lng ?? null,
         address_line: input.address_line,
         phone: input.phone,
         payment_method: input.payment_method,

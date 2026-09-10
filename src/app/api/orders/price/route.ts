@@ -3,6 +3,7 @@ import { priceOrder, type PricingDeps } from "@/lib/server/order-pricing";
 import { isDemoMode } from "@/lib/supabase/helpers";
 import { createClient } from "@/lib/supabase/server";
 import { rateLimitWithPrune, clientKey } from "@/lib/server/rate-limit";
+import { checkStoreOpen, resolveDeliveryZone } from "@/lib/server/launch-gate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,9 @@ interface PriceRequestBody {
   couponCode?: string;
   walletApplied?: number;
   pincode?: string;
+  /** Delivery pin, when the customer dropped one. Beats the pincode. */
+  lat?: number | null;
+  lng?: number | null;
   /**
    * Demo-only fields — the server can't read the customer's localStorage,
    * so the client mirrors relevant state here. Ignored in production where
@@ -217,6 +221,35 @@ export async function POST(req: NextRequest) {
         };
       },
     };
+
+    // ── Launch gate: no quote while the store is paused or pre-launch ──
+    // The "Opening Soon" board is presentation; this is the enforcement.
+    const closed = await checkStoreOpen(supabase);
+    if (closed) {
+      return NextResponse.json(
+        { ok: false, error: closed.error, code: closed.code, store_status: closed.storeStatus },
+        { status: closed.status },
+      );
+    }
+
+    // ── Service-area gate ──
+    // Quoting an address we cannot deliver to is how a customer ends up at a
+    // payment screen for an order that must then be cancelled. Refuse early.
+    // A quote without any address yet is fine — placement re-checks and is
+    // the hard gate.
+    if (body.pincode || body.lat != null) {
+      const zone = await resolveDeliveryZone(supabase, {
+        pincode: body.pincode,
+        lat: body.lat,
+        lng: body.lng,
+      });
+      if (!zone.ok) {
+        return NextResponse.json(
+          { ok: false, error: zone.block.error, code: zone.block.code },
+          { status: zone.block.status },
+        );
+      }
+    }
   }
 
   // Rate-limit per authenticated user (or per IP in demo). 60 requests per

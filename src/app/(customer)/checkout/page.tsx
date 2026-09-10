@@ -143,6 +143,13 @@ export default function CheckoutPage() {
   if (items.length === 0 && !placed) return null;
 
   const selectedAddr = addresses.find((a) => a.id === selectedId);
+  // A saved address may carry a dropped map pin. Send it: the server treats
+  // a pin as authoritative over the typed pincode, so an address just outside
+  // the sector boundary is refused even when its pincode is serviceable.
+  const deliveryPin =
+    useSaved && selectedAddr?.lat != null && selectedAddr?.lng != null
+      ? { lat: selectedAddr.lat, lng: selectedAddr.lng }
+      : null;
 
   const handlePlaceOrder = async () => {
     let finalName = recipientName.trim();
@@ -222,6 +229,8 @@ export default function CheckoutPage() {
         couponCode: coupon?.code,
         walletApplied,
         pincode: extractedPincode,
+        lat: deliveryPin?.lat ?? null,
+        lng: deliveryPin?.lng ?? null,
         // Demo-mode snapshot — only used when server is in demo mode (where
         // it can't see localStorage). In production this field is ignored.
         demoSnapshot: {
@@ -334,6 +343,8 @@ export default function CheckoutPage() {
       // ignored by /api/orders/place.
       walletApplied: priceData.walletApplied,
       pincode: extractedPincode,
+      lat: deliveryPin?.lat ?? null,
+      lng: deliveryPin?.lng ?? null,
       payment: paymentProof
         ? {
             razorpay_order_id: paymentProof.razorpay_order_id,

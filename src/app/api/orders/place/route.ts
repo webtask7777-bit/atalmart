@@ -11,12 +11,20 @@ import { isDemoMode } from "@/lib/supabase/helpers";
 import { UPI_UTR_RE, normalizeUtr } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/server/supabase-admin";
+import {
+  checkStoreOpen,
+  resolveDeliveryZone,
+  isMissingSchema,
+  logSchemaSkip,
+  type ResolvedZone,
+} from "@/lib/server/launch-gate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Fixed Naya Raipur store coordinates — same constants the client previously
-// hardcoded into the RPC call. Address geocoding is out of scope here.
+// Naya Raipur store coordinates. Used ONLY as a last-resort fallback when the
+// customer's delivery point cannot be resolved at all — every order used to be
+// stamped with these, which made orders.lat/lng useless for routing.
 const STORE_LAT = 21.161;
 const STORE_LNG = 81.787;
 
@@ -25,6 +33,9 @@ interface PlaceBody {
   couponCode?: string;
   walletApplied?: number;
   pincode?: string;
+  /** Delivery pin when the customer dropped one. Authoritative over pincode. */
+  lat?: number | null;
+  lng?: number | null;
   address_line: string;
   phone: string;
   payment_method: "cod" | "online" | "upi";
@@ -113,6 +124,35 @@ export async function POST(req: NextRequest) {
       { status: 429, headers: { "retry-after": String(limit.retryAfterSec) } },
     );
   }
+
+  // ── Launch gate ──
+  // The store-status board and the disabled checkout button are presentation.
+  // This is the rule: a paused or pre-launch store accepts no orders, however
+  // the request arrives.
+  const closed = await checkStoreOpen(supabase);
+  if (closed) {
+    return NextResponse.json(
+      { error: closed.error, code: closed.code, store_status: closed.storeStatus },
+      { status: closed.status },
+    );
+  }
+
+  // ── Service-area gate ──
+  // Until now the customer pincode was carried into pricing but never checked,
+  // and the order was stamped with the store's own coordinates. Resolve the
+  // real zone here and refuse anything outside it.
+  const zoneResult = await resolveDeliveryZone(supabase, {
+    pincode: body.pincode,
+    lat: body.lat,
+    lng: body.lng,
+  });
+  if (!zoneResult.ok) {
+    return NextResponse.json(
+      { error: zoneResult.block.error, code: zoneResult.block.code },
+      { status: zoneResult.block.status },
+    );
+  }
+  const zone: ResolvedZone = zoneResult.zone;
 
   // ── Authoritative re-price (ignores any client totals) ──
   let pricing;
@@ -232,6 +272,31 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── A manual UPI reference may be used exactly once ──
+  // The UTR is the only evidence a direct-UPI order was paid. Without this
+  // check the same screenshot pays for an unlimited number of orders, and the
+  // admin only finds out when reconciling the bank statement.
+  if (upiUtr) {
+    try {
+      const { data: usedUtr, error: utrErr } = await admin
+        .from("payments")
+        .select("order_id")
+        .eq("provider", "upi_manual")
+        .eq("provider_payment_id", upiUtr)
+        .maybeSingle();
+      if (utrErr && !isMissingSchema(utrErr)) throw utrErr;
+      if (usedUtr) {
+        return NextResponse.json(
+          { error: "Ye UPI reference pehle se use ho chuka hai. Sahi UTR daalein." },
+          { status: 409 },
+        );
+      }
+    } catch (err) {
+      if (isMissingSchema(err)) logSchemaSkip("place/utr-check", err);
+      else throw err;
+    }
+  }
+
   // ── Idempotency: never write two orders for one captured payment ──
   if (body.payment_method === "online" && body.payment?.razorpay_payment_id) {
     const { data: existing } = await admin
@@ -266,8 +331,10 @@ export async function POST(req: NextRequest) {
       p_delivery_fee: pricing.deliveryFee,
       p_discount: pricing.couponDiscount,
       p_address_line: body.address_line,
-      p_lat: STORE_LAT,
-      p_lng: STORE_LNG,
+      // The delivery point, not the store. Falls back to the store only when
+      // neither a pin nor a mapped sector centroid is available.
+      p_lat: zone.lat ?? STORE_LAT,
+      p_lng: zone.lng ?? STORE_LNG,
       p_phone: body.phone,
       p_payment_method: body.payment_method,
       p_coupon_code: pricing.couponCode,
@@ -300,12 +367,116 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Bind the payment id (unique column → blocks reuse / double-spend).
-  if (body.payment_method === "online" && body.payment?.razorpay_payment_id) {
-    await admin
+  // ── Post-write bookkeeping ──
+  // None of this may throw: the order exists and the customer has already been
+  // charged. A missing migration degrades to a logged skip, never a 500.
+  const totalPaise = Math.round(pricing.total * 100);
+  const paidNow = pricing.total <= 0 || body.payment_method === "online";
+
+  // Bind the payment id (unique column → blocks reuse / double-spend) and
+  // record the payment state, which until now was inferred from the payment
+  // method and therefore could not distinguish paid from merely placed.
+  {
+    const patch: Record<string, unknown> = {};
+    if (body.payment_method === "online" && body.payment?.razorpay_payment_id) {
+      patch.razorpay_payment_id = body.payment.razorpay_payment_id;
+    }
+    try {
+      const { error } = await admin.from("orders").update(patch).eq("id", orderId);
+      if (error) throw error;
+    } catch (err) {
+      logSchemaSkip("place/bind-payment", err);
+    }
+
+    // payment_status lives behind migration 023; try it separately so a
+    // pre-migration deploy still binds the payment id above.
+    try {
+      const statePatch: Record<string, unknown> = {
+        payment_status: paidNow ? "paid" : body.payment_method === "upi" ? "pending" : "unpaid",
+      };
+      if (paidNow) statePatch.paid_at = new Date().toISOString();
+      if (body.payment?.razorpay_order_id) {
+        statePatch.razorpay_order_id = body.payment.razorpay_order_id;
+      }
+      const { error } = await admin.from("orders").update(statePatch).eq("id", orderId);
+      if (error) throw error;
+    } catch (err) {
+      if (isMissingSchema(err)) logSchemaSkip("place/payment-status", err);
+      else console.error("[place] payment_status update failed", err);
+    }
+  }
+
+  // Zone columns (migration 022). Recorded even when unresolved, so the
+  // operator can see which orders were accepted without a mapped sector.
+  try {
+    const { error } = await admin
       .from("orders")
-      .update({ razorpay_payment_id: body.payment.razorpay_payment_id })
+      .update({
+        zone_id: zone.zoneId,
+        zone_name: zone.zoneName,
+        delivery_pincode: zone.pincode,
+        zone_source: zone.source,
+      })
       .eq("id", orderId);
+    if (error) throw error;
+  } catch (err) {
+    if (isMissingSchema(err)) logSchemaSkip("place/zone", err);
+    else console.error("[place] zone update failed", err);
+  }
+
+  // A payment row per gateway payment. order_id is set here; the webhook may
+  // have already written this row from the other direction, so upsert.
+  if (body.payment_method === "online" && body.payment?.razorpay_payment_id) {
+    try {
+      const { error } = await admin.from("payments").upsert(
+        {
+          order_id: orderId,
+          provider: "razorpay",
+          provider_payment_id: body.payment.razorpay_payment_id,
+          provider_order_id: body.payment.razorpay_order_id ?? null,
+          amount_paise: totalPaise,
+          status: "captured",
+          captured_at: new Date().toISOString(),
+        },
+        { onConflict: "provider,provider_payment_id" },
+      );
+      if (error) throw error;
+    } catch (err) {
+      if (isMissingSchema(err)) logSchemaSkip("place/payment-row", err);
+      else console.error("[place] payment row failed", err);
+    }
+  }
+
+  // Manual UPI: the UTR is the payment record, pending admin verification.
+  if (upiUtr) {
+    try {
+      const { error } = await admin.from("payments").insert({
+        order_id: orderId,
+        provider: "upi_manual",
+        provider_payment_id: upiUtr,
+        amount_paise: totalPaise,
+        status: "created",
+        method: "upi",
+      });
+      if (error) throw error;
+    } catch (err) {
+      if (isMissingSchema(err)) logSchemaSkip("place/upi-row", err);
+      else console.error("[place] upi payment row failed", err);
+    }
+  }
+
+  // Cash: what the rider is expected to collect. Collection and remittance are
+  // filled in later — delivered no longer implies the money came back.
+  if (body.payment_method === "cod" && pricing.total > 0) {
+    try {
+      const { error } = await admin
+        .from("cod_collections")
+        .upsert({ order_id: orderId, expected_paise: totalPaise }, { onConflict: "order_id" });
+      if (error) throw error;
+    } catch (err) {
+      if (isMissingSchema(err)) logSchemaSkip("place/cod-row", err);
+      else console.error("[place] cod row failed", err);
+    }
   }
 
   const { data: order, error: fetchErr } = await admin
