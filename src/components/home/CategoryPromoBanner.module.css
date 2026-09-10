@@ -315,14 +315,26 @@
   }
 }
 
+/* Phone cards (≤560px boxes, the 88vw mobile rail). Compact poster:
+   eyebrow / title / description stacked full-width, then ONE bottom row
+   with the CTA on the left and the product art on the right. `.copy`
+   becomes display:contents so its children can be placed on the banner's
+   grid next to `.art`. The category chip and badge are dropped here —
+   the chip duplicates the eyebrow, and both just added height. */
 @container (max-width: 560px) {
   .banner {
-    min-height: 455px;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 160px;
-    align-items: start;
-    gap: 7px;
-    padding: 24px 20px 45px;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr) 118px;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "eyebrow eyebrow"
+      "title   title"
+      "desc    desc"
+      "actions art"
+      "note    art";
+    align-items: center;
+    gap: 0 10px;
+    padding: 20px 18px 20px;
     border-radius: 20px;
   }
 
@@ -330,74 +342,105 @@
     mask-image: linear-gradient(180deg, transparent 7%, #000 45%, #000);
   }
 
+  .orbit {
+    right: -30%;
+    bottom: -60%;
+    width: 80%;
+  }
+
+  .copy {
+    display: contents;
+  }
+
   .eyebrow {
-    min-height: 25px;
+    grid-area: eyebrow;
+    justify-self: start;
+    min-height: 24px;
     padding: 5px 9px;
     font-size: 9px;
   }
 
   .title {
-    margin-top: 12px;
-    font-size: clamp(29px, 8.4vw, 35px);
-    line-height: 1.03;
+    grid-area: title;
+    margin-top: 10px;
+    font-size: clamp(23px, 6.6vw, 27px);
+    line-height: 1.05;
+    letter-spacing: -0.035em;
   }
 
   .description {
-    margin-top: 10px;
-    font-size: 13px;
-    line-height: 1.43;
+    grid-area: desc;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    margin-top: 8px;
+    font-size: 12.5px;
+    line-height: 1.4;
   }
 
   .actions {
-    gap: 11px;
-    margin-top: 15px;
+    grid-area: actions;
+    align-self: center;
+    min-width: 0;
+    gap: 8px;
+    margin-top: 14px;
   }
 
   .cta,
   .disabledCta {
-    min-height: 41px;
-    padding: 0 14px;
+    min-height: 40px;
+    padding: 0 12px;
     border-radius: 11px;
     font-size: 12px;
   }
 
   .badge {
-    max-width: 122px;
-    font-size: 9.5px;
-    line-height: 1.3;
+    display: none;
   }
 
   .note {
-    margin-top: 7px;
+    grid-area: note;
+    align-self: start;
+    margin-top: 6px;
     font-size: 9px;
   }
 
   .art {
-    min-height: 160px;
+    grid-area: art;
+    align-self: center;
+    min-height: 0;
+    height: 124px;
+    margin-top: 12px;
+    width: 118px;
   }
 
   .glow,
   .productFrame {
-    top: 47%;
-    right: 50%;
-    width: 185px;
-    height: 165px;
+    top: 50%;
+    right: 0;
+    width: 124px;
+    height: 110px;
   }
 
   .glow {
-    transform: translate(50%, -50%) rotate(-5deg);
+    transform: translateY(-50%) rotate(-5deg);
   }
 
   .productFrame {
-    transform: translate(50%, -50%) rotate(2deg);
+    width: 134px;
+    height: 120px;
+    right: -5px;
+    transform: translateY(-50%) rotate(2deg);
+  }
+
+  .productImage {
+    padding: 2px;
+    filter: drop-shadow(0 10px 14px rgba(10, 20, 16, 0.3));
   }
 
   .freshChip {
-    right: calc(50% + 30px);
-    bottom: -4px;
-    max-width: 132px;
-    padding: 7px 10px;
-    font-size: 8px;
+    display: none;
   }
 }
 
