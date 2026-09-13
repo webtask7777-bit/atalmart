@@ -150,7 +150,7 @@ const PRODUCTS = [
     features: ["Jeera-kali mirch masala chhach", "Digestion-friendly, low fat", "Garmi ka refreshing drink", "Sealed 200 ml pouch", "No added sugar"],
     processing_type: "Pasteurised, cultured", fat_profile: "Low fat", sugar_profile: "No added sugar", biological_source: "Cow & buffalo milk",
     shelf_life: "3 din (fridge mein rakhein)", nutrition: null },
-  { name: "Devbhog Shrikhand", hi: "देवभोग श्रीखंड", unit: "80 g", price: 25, cat: "Dairy", sub: "Curd & Yogurt", fop: "22-shrikhand-80g.png", gallery: ["Devbhog Shrikhand2.png"],
+  { name: "Devbhog Shrikhand", hi: "देवभोग श्रीखंड", unit: "80 g", price: 25, cat: "Dairy", sub: "Curd & Yogurt", fop: "22-shrikhand-80g-red-cup.png", gallery: ["Devbhog Shrikhand2.png", "22-shrikhand-80g.png"],
     blurb: "Chakka (hung curd), shakkar, elaichi aur jaiphal se bana traditional Devbhog Shrikhand — semi-soft, meetha-khatta, elaichi ki khushboo ke saath.",
     line: "Whole milk ki lactic-fermented dahi se banaya gaya; single-serve cup.",
     features: ["Chakka + shakkar + elaichi + jaiphal", "Traditional Maharashtrian-style", "Whole milk se bana", "Single-serve sealed cup", "80 g cup"],

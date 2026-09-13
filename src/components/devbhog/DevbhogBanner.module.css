@@ -1,0 +1,22 @@
+.banner {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  border-radius: clamp(16px, 2vw, 28px);
+  box-shadow: 0 18px 60px rgba(40, 25, 10, 0.14);
+  background: #f4f1e8;
+}
+
+.banner img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1920 / 645;
+  object-fit: cover;
+}
+
+@media (max-width: 640px) {
+  .banner img {
+    aspect-ratio: 1080 / 1350;
+  }
+}

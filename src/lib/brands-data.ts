@@ -20,6 +20,7 @@ export interface BrandCard {
 export const BRAND_CARDS: BrandCard[] = [
   {"slug": "amul", "name": "Amul", "parent": "Amul (GCMMF)", "logo": "/brands/amul.webp", "search": "Amul", "products": 53, "tile": false, "lowRes": false},
   {"slug": "britannia", "name": "Britannia", "parent": "Britannia", "logo": "/brands/britannia.webp", "search": "Britannia", "products": 37, "tile": false, "lowRes": false},
+  {"slug": "devbhog", "name": "Devbhog", "parent": "Chhattisgarh State Co-operative Dairy Federation", "logo": "/brands/devbhog.webp", "search": "Devbhog", "products": 26, "tile": false, "lowRes": false},
   {"slug": "aashirvaad", "name": "Aashirvaad", "parent": "ITC", "logo": "/brands/aashirvaad.webp", "search": "Aashirvaad", "products": 20, "tile": false, "lowRes": false},
   {"slug": "sunfeast", "name": "Sunfeast", "parent": "ITC", "logo": "/brands/sunfeast.webp", "search": "Sunfeast", "products": 20, "tile": false, "lowRes": false},
   {"slug": "nescafe", "name": "Nescafé", "parent": "Nestlé", "logo": "/brands/nescafe.webp", "search": "Nescafé", "products": 17, "tile": false, "lowRes": false},

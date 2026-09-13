@@ -20,6 +20,7 @@ import { CategoryPromoBanner } from "@/components/home/CategoryPromoBanner";
 import { categoryBanners } from "@/data/category-banners";
 import dynamic from "next/dynamic";
 import { PopatStaticBanner } from "@/components/popat/PopatStaticBanner";
+import { DevbhogBanner } from "@/components/devbhog/DevbhogBanner";
 // Below-the-fold, client-only sections: loaded after the shell hydrates so
 // their code doesn't sit on the first-paint path.
 const PopatHero = dynamic(() => import("@/components/popat/PopatHero").then((m) => m.PopatHero), { ssr: false });
@@ -446,6 +447,23 @@ function HomeContent({
             />
           )}
 
+          {/* Devbhog zone — Chhattisgarh's cooperative dairy: brand creative
+              (owner's visual set) with the dairy rail right below. */}
+          {rails.devbhog.length > 0 && (
+            <>
+              <DevbhogBanner className="mt-6" />
+              <ProductRail
+                title="Devbhog Dairy"
+                subtitle="Chhattisgarh ka apna doodh — milk, dahi, ghee, paneer, mithai"
+                emoji="🥛"
+                products={rails.devbhog}
+                seeAllHref="/?search=devbhog"
+                seeAllLabel="All Devbhog"
+                accent="green"
+              />
+            </>
+          )}
+
           {rails.dailyEssentials.length > 0 && (
             <ProductRail
               id="daily-essentials"
@@ -668,9 +686,14 @@ function buildRails(products: Product[], categories: Category[]) {
     products.filter((p) => inStock(p) && !!p.image_url && /^popat\b/i.test(p.name)),
   ).slice(0, 12);
 
+  const devbhog = shuffleForGrid(
+    products.filter((p) => inStock(p) && !!p.image_url && /^devbhog\b/i.test(p.name)),
+  ).slice(0, 12);
+
   return {
     freshVeg,
     popat,
+    devbhog,
     topDeals,
     dailyEssentials: byCat([
       "Dairy",
