@@ -3,7 +3,7 @@
 import { use, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useOrder } from "@/lib/hooks/use-orders";
-import { ORDER_STATUS_LABELS, GSTIN, FSSAI_LICENSE, paymentMethodLabel } from "@/lib/constants";
+import { ORDER_STATUS_LABELS, GSTIN, FSSAI_LICENSE, LEGAL_STATUS, paymentMethodLabel } from "@/lib/constants";
 import { useSettings } from "@/lib/store/settings";
 import { Printer, Download, ArrowLeft, X, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -142,6 +142,8 @@ export default function InvoicePage({ params }: { params: Promise<{ id: string }
                 {settings.storeAddress}
                 <br />
                 {settings.contactPhone} · {settings.contactEmail}
+                <br />
+                {LEGAL_STATUS}
                 {(GSTIN || FSSAI_LICENSE) && (
                   <>
                     <br />

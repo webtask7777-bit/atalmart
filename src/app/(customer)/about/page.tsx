@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Zap, ShieldCheck, Leaf, MapPin } from "lucide-react";
-import { APP_NAME, INCORPORATION_DATE } from "@/lib/constants";
+import { APP_NAME } from "@/lib/constants";
 
 export const metadata = {
   title: "About Us",
@@ -70,8 +70,8 @@ export default function AboutPage() {
           <p className="text-sm text-gray-600 mt-2 leading-relaxed">
             {APP_NAME} ek quick-commerce grocery delivery service hai jo sirf
             Atal Nagar, Naya Raipur (Chhattisgarh) ke residents ko serve
-            karta hai. Company {INCORPORATION_DATE} ko incorporate hui thi.
-            Hamara maqsad simple hai — mohalle ki dukaan jaisi familiarity,
+            karta hai. Company abhi under incorporation hai — registration
+            process chal raha hai. Hamara maqsad simple hai — mohalle ki dukaan jaisi familiarity,
             lekin app ki speed aur convenience ke saath.
           </p>
         </section>

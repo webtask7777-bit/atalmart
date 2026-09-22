@@ -1,7 +1,7 @@
 import Link from "next/link";
 import {
   APP_NAME,
-  INCORPORATION_DATE,
+  LEGAL_STATUS,
   FSSAI_LICENSE,
   GSTIN,
   SUPPORT_EMAIL,
@@ -56,7 +56,7 @@ export function Footer() {
             &copy; {new Date().getFullYear()} {APP_NAME}
           </p>
           <p className="text-center text-[10px] text-gray-400 leading-snug">
-            Incorporated {INCORPORATION_DATE}
+            {LEGAL_STATUS}
           </p>
           {(FSSAI_LICENSE || GSTIN) && (
             <p className="text-center text-[10px] text-gray-400 leading-snug">
@@ -166,8 +166,8 @@ export function Footer() {
           <span className="text-saffron">{SUPPORT_EMAIL}</span>
           <br className="sm:hidden" />
           <span className="hidden sm:inline"> · </span>
-          &copy; {new Date().getFullYear()} {APP_NAME} · Incorporated{" "}
-          {INCORPORATION_DATE} · Made with ❤️ in Atal Nagar.
+          &copy; {new Date().getFullYear()} {APP_NAME} · {LEGAL_STATUS} · Made
+          with ❤️ in Atal Nagar.
           {(FSSAI_LICENSE || GSTIN) && (
             <p className="mt-1">
               {FSSAI_LICENSE && <>FSSAI Lic. No. {FSSAI_LICENSE}</>}

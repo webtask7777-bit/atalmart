@@ -1,4 +1,4 @@
-import { APP_NAME, INCORPORATION_DATE } from "@/lib/constants";
+import { APP_NAME, LEGAL_LAST_UPDATED } from "@/lib/constants";
 
 export const metadata = {
   title: "Terms & Conditions",
@@ -11,7 +11,7 @@ export default function TermsPage() {
     <div className="max-w-3xl mx-auto px-4 pt-4 pb-24">
       <h1 className="text-xl font-bold text-brown">Terms & Conditions</h1>
       <p className="text-[12px] text-gray-500 mt-1">
-        Last updated: {INCORPORATION_DATE}
+        Last updated: {LEGAL_LAST_UPDATED}
       </p>
 
       <div className="mt-6 space-y-6 text-[13px] text-gray-600 leading-relaxed">

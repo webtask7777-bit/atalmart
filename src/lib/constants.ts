@@ -1,8 +1,16 @@
 export const APP_NAME = "Atalmart";
 export const APP_TAGLINE = "Atal Nagar ki Atal Delivery";
 
-/** Company incorporation date (owner-confirmed). Shown in footer / legal copy. */
-export const INCORPORATION_DATE = "01 July 2026";
+/**
+ * Legal status line shown in the footer, About page and invoices. The company
+ * is not incorporated yet (owner-confirmed, Sep 2026) — once the certificate
+ * of incorporation arrives, replace this with the registered entity name
+ * (e.g. "Atalmart Retail Private Limited · CIN …").
+ */
+export const LEGAL_STATUS = "Under incorporation";
+
+/** Date the legal pages (terms/privacy/refund) were last revised. */
+export const LEGAL_LAST_UPDATED = "22 September 2026";
 
 export const DELIVERY_FEE = 25;
 export const FREE_DELIVERY_ABOVE = 299;
