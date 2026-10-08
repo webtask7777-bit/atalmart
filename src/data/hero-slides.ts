@@ -69,7 +69,8 @@ export const heroSlides = [
     eyebrow: "FREE DELIVERY",
     title: "Spend ₹299,",
     accent: "save ₹25",
-    description: "Free delivery on every order above ₹299",
+    // Inclusive — the rule is subtotal ≥ ₹299 (after coupon), see cart-line.ts.
+    description: "Free delivery on orders of ₹299 or more",
     ctaLabel: "Browse",
     href: "/#daily-essentials",
     meta: "₹0 delivery fee on eligible orders",

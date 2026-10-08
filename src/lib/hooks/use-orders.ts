@@ -16,6 +16,7 @@ import {
   useAcquisitionStore,
   useCampaignAnalyticsStore,
 } from "@/lib/store/acquisition";
+import { sellableName } from "@/lib/product-name";
 import type { Order, CartItem } from "@/types";
 
 interface CreateOrderInput {
@@ -214,7 +215,7 @@ export async function createOrder(input: CreateOrderInput): Promise<{ data: Orde
         order_id: orderId,
         product_id: it.product.id,
         product_name: it.variant
-          ? `${it.product.name} (${it.variant.unit})`
+          ? sellableName(it.product.name, it.variant.unit)
           : it.product.name,
         quantity: it.quantity,
         price: it.variant?.price ?? it.product.price,

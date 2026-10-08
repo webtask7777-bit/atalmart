@@ -2,22 +2,18 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useEffect, useState } from "react";
 import type { CartItem, Product, ProductVariant } from "@/types";
+import { cartKey, resolveLines, summarizeLines } from "@/lib/cart-line";
 
 /**
  * A cart line's identity is "product + selected variant" — the same product
  * can be in cart twice with different pack sizes (Amul 500ml + 1L).
+ *
+ * Every money figure derived from the cart (totals, MRP, savings, the cart
+ * bar, checkout preview) comes from src/lib/cart-line.ts so each surface
+ * resolves the selected pack the same way.
  */
-function cartKey(productId: string, variantId?: string | null): string {
-  return variantId ? `${productId}::${variantId}` : productId;
-}
-
 function itemKey(it: CartItem): string {
   return cartKey(it.product.id, it.variant?.id);
-}
-
-/** Pick the right price source — variant overrides product when set. */
-function unitPrice(it: CartItem): number {
-  return it.variant?.price ?? it.product.price;
 }
 
 interface CartStore {
@@ -30,7 +26,12 @@ interface CartStore {
     variantId?: string | null,
   ) => void;
   clearCart: () => void;
+  /** Merchandise subtotal at the selected variant prices (integer rupees). */
   getTotal: () => number;
+  /** Σ quantity × selected-variant MRP. */
+  getMrpTotal: () => number;
+  /** Σ quantity × max(0, selected MRP − selected price). */
+  getMerchandiseSavings: () => number;
   getItemCount: () => number;
 }
 
@@ -74,12 +75,10 @@ export const useCartStore = create<CartStore>()(
 
       clearCart: () => set({ items: [] }),
 
-      getTotal: () =>
-        get().items.reduce(
-          (sum, item) => sum + unitPrice(item) * item.quantity,
-          0,
-        ),
-
+      getTotal: () => summarizeLines(resolveLines(get().items)).subtotal,
+      getMrpTotal: () => summarizeLines(resolveLines(get().items)).mrpTotal,
+      getMerchandiseSavings: () =>
+        summarizeLines(resolveLines(get().items)).merchandiseSavings,
       getItemCount: () =>
         get().items.reduce((sum, item) => sum + item.quantity, 0),
     }),
@@ -124,4 +123,3 @@ export function useCartHydrated(): boolean {
   }, []);
   return hydrated;
 }
-

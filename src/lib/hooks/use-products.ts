@@ -13,6 +13,7 @@ import {
   getCachedProduct,
 } from "@/lib/demo-products";
 import { getAllDemoProducts, getDemoProduct } from "@/lib/store/demo-products";
+import { expandQueryTerms, matchesQuery, rankSearchResults } from "@/lib/search-rank";
 import type { Product, Category } from "@/types";
 
 /**
@@ -92,12 +93,11 @@ export function useProducts(options?: {
       if (myReqId !== reqIdRef.current) return; // a newer call superseded us
       let filtered = mergeRuntime(base);
       if (options?.search) {
-        const q = options.search.toLowerCase();
-        filtered = filtered.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            p.name_hi.includes(q) ||
-            (p.description || "").toLowerCase().includes(q),
+        // Same alias expansion + ranking as the live path (search-rank.ts).
+        const q = options.search;
+        filtered = rankSearchResults(
+          filtered.filter((p) => matchesQuery(p, q)),
+          q,
         );
       }
       setProducts(filtered);
@@ -146,14 +146,20 @@ export function useProducts(options?: {
         // Only Latin-1/Latin-Extended letters are touched: Hindi queries must
         // reach name_hi untouched. `,` and parentheses are PostgREST filter
         // syntax, so they are dropped rather than breaking the whole query.
-        const term = options.search
-          .normalize("NFC")
-          .replace(/[,()]/g, " ")
-          .replace(/[\u00C0-\u024F]/g, "_")
-          .replace(/\s+/g, " ")
-          .trim();
+        // A generic product type ("milk" / "doodh" / "दूध") expands to its
+        // aliases so every spelling fetches the same rows; ranking below
+        // puts the plain product first.
+        const terms = expandQueryTerms(options.search).map((t) =>
+          t.replace(/[\u00C0-\u024F]/g, "_"),
+        );
         q = q.or(
-          `name.ilike.%${term}%,name_hi.ilike.%${term}%,description.ilike.%${term}%`,
+          terms
+            .flatMap((term) => [
+              `name.ilike.%${term}%`,
+              `name_hi.ilike.%${term}%`,
+              `description.ilike.%${term}%`,
+            ])
+            .join(","),
         );
       }
       return q;
@@ -172,7 +178,9 @@ export function useProducts(options?: {
     const [allProducts, catResult] = await Promise.all([fetchAllPages(), catPromise]);
 
     if (myReqId !== reqIdRef.current) return;
-    setProducts(allProducts);
+    // Search results come back newest-first from the DB; rank name/type
+    // matches above description-only matches (see search-rank.ts).
+    setProducts(options?.search ? rankSearchResults(allProducts, options.search) : allProducts);
     setCategories((catResult.data as Category[]) || []);
     setLoading(false);
   }, [options?.categoryId, options?.categoryName, options?.search]);

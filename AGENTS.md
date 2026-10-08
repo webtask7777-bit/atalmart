@@ -52,3 +52,24 @@ worked in demo mode but never matched the Supabase UUIDs in live. Fixed
 in `useCategories()` (`src/lib/hooks/use-products.ts`) — admin pages now
 use real category data with the correct ids. Don't reintroduce
 `String(i+1)`; use the hook.
+
+## Storefront money, availability and policy — one source each (Oct 2026)
+
+- **Sellable line**: anything that shows a cart line (card, PDP, cart, cart
+  bar, checkout, demo order writer) goes through `resolveLine()` in
+  `src/lib/cart-line.ts`; totals through `summarizeLines()` / `computeQuote()`.
+  Labels come from `src/lib/product-name.ts` (`familyName` + selected pack).
+  Server order lines use the same naming in `src/lib/server/order-pricing.ts`.
+  Never read `product.price` / `product.mrp` for a line that has a variant.
+- **Availability**: `deriveAvailability()` (`src/lib/availability.ts`) via
+  `useStoreAvailability()` — header chip, QUICK pills, PDP strip, busy strip,
+  cart and checkout CTA. No delivery ETA unless the state is `open`.
+- **Returns policy**: `src/lib/policy.ts` (window + category exceptions).
+  FAQ, Contact, Refund page, PDP and `isWithinReturnWindow` render from it.
+  `products.return_policy` is not displayed. Placeholder `customer_care`
+  (support@atalmart.in / 91120-00000) is seed data — the PDP hides it.
+- **Search**: `src/lib/search-rank.ts` — type aliases (milk/doodh/दूध…) and
+  ranking; `?search=`, `?category=`, `?sub=` in the URL are the state.
+- **Tests**: `npm test` (Node's built-in runner, `tests/`, `@/` alias via
+  `tests/alias-loader.mjs`). Add a case there when touching money or policy.
+  `npm run typecheck` before pushing. See `docs/launch-polish-2026-10-08.md`.

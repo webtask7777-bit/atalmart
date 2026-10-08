@@ -4,7 +4,9 @@ import { APP_NAME } from "@/lib/constants";
 import { isDemoMode } from "@/lib/supabase/helpers";
 import {
   getPublicProductResult,
+  primaryOffer,
   productDisplayName,
+  productFamilyName,
   productMetaDescription,
   productOgImage,
 } from "@/lib/server/public-product";
@@ -32,7 +34,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       : { title: "Product", robots: { index: false, follow: true } };
   }
 
-  const title = `${productDisplayName(product)} — ₹${product.price}`;
+  // Price of the pack the page opens on (default variant when present) — the
+  // same number the PDP, card and cart start from.
+  const title = `${productDisplayName(product)} — ₹${primaryOffer(product).price}`;
   const description = productMetaDescription(product);
   const image = productOgImage(product);
   const url = `${BASE}/product/${product.id}`;
@@ -77,28 +81,54 @@ export default async function ProductPage({ params }: Props) {
     const images = [product.image_url, ...(product.image_urls ?? [])].filter(
       (u): u is string => Boolean(u),
     );
+    const offer = primaryOffer(product);
+    const url = `${BASE}/product/${product.id}`;
+    const availability = (stock: number) =>
+      stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock";
+    const seller = { "@type": "Organization", name: APP_NAME };
+    // One Offer per sellable pack. A product with variants lists each pack
+    // under an AggregateOffer so the structured data never quotes a price
+    // the page doesn't sell at.
+    const offers =
+      offer.packs.length > 1
+        ? {
+            "@type": "AggregateOffer",
+            url,
+            priceCurrency: "INR",
+            lowPrice: Math.min(...offer.packs.map((p) => p.price)),
+            highPrice: Math.max(...offer.packs.map((p) => p.price)),
+            offerCount: offer.packs.length,
+            offers: offer.packs.map((p) => ({
+              "@type": "Offer",
+              url,
+              name: p.unit,
+              priceCurrency: "INR",
+              price: p.price,
+              itemCondition: "https://schema.org/NewCondition",
+              availability: availability(p.stock),
+              seller,
+            })),
+          }
+        : {
+            "@type": "Offer",
+            url,
+            priceCurrency: "INR",
+            price: offer.price,
+            itemCondition: "https://schema.org/NewCondition",
+            availability: availability(offer.stock),
+            seller,
+            areaServed: "Naya Raipur, Chhattisgarh",
+          };
     jsonLd = {
       "@context": "https://schema.org",
       "@type": "Product",
-      name: product.name,
+      name: productFamilyName(product),
       ...(product.name_hi ? { alternateName: product.name_hi } : {}),
       image: images,
       description: productMetaDescription(product),
       sku: product.id,
       ...(product.category?.name ? { category: product.category.name } : {}),
-      offers: {
-        "@type": "Offer",
-        url: `${BASE}/product/${product.id}`,
-        priceCurrency: "INR",
-        price: product.price,
-        itemCondition: "https://schema.org/NewCondition",
-        availability:
-          product.stock > 0
-            ? "https://schema.org/InStock"
-            : "https://schema.org/OutOfStock",
-        seller: { "@type": "Organization", name: APP_NAME },
-        areaServed: "Naya Raipur, Chhattisgarh",
-      },
+      offers,
     };
     }
   }

@@ -11,6 +11,7 @@
 
 import { calculateCouponDiscount, validateCoupon, type Coupon } from "@/lib/constants";
 import { assertRupees, toRupees } from "@/lib/money";
+import { sellableName } from "@/lib/product-name";
 
 export interface CartLine {
   product_id: string;
@@ -82,8 +83,9 @@ export interface PricingDeps {
   getUserCouponUsage: (userId: string, code: string) => Promise<number>;
   /** Current wallet balance for this user. */
   getWalletBalance: (userId: string) => Promise<number>;
-  /** Delivery fee + free-above rules from settings. */
-  getDeliveryRules: () => Promise<{ fee: number; freeAbove: number }>;
+  /** Delivery fee + free-above rules from settings. `minOrder` is the
+   *  merchandise minimum (0 / undefined = none). */
+  getDeliveryRules: () => Promise<{ fee: number; freeAbove: number; minOrder?: number }>;
 }
 
 export async function priceOrder(
@@ -155,7 +157,10 @@ export async function priceOrder(
       }
       effectivePrice = variant.price;
       effectiveStock = variant.stock;
-      effectiveName = `${product.name} (${variant.unit})`;
+      // Size-free family + selected pack: the catalogue name may already end
+      // in a (different) size — "Amul Taaza Milk (500 ml)" + 1 L variant must
+      // become "Amul Taaza Milk (1 L)", not "… (500 ml) (1 L)".
+      effectiveName = sellableName(product.name, variant.unit);
       variantUnit = variant.unit;
     }
 
@@ -182,6 +187,24 @@ export async function priceOrder(
       line_total: lineTotal,
     });
     subtotal += lineTotal;
+  }
+
+  // ── Delivery / minimum-order rules (settings singleton) ──
+  // toRupees() guards against any decimal drift from settings rows.
+  const rules = await deps.getDeliveryRules();
+  const { fee: rawFee, freeAbove } = rules;
+
+  // ── Minimum order: merchandise subtotal only, before coupons ──
+  // The FAQ has advertised a ₹49 minimum since launch prep but nothing
+  // enforced it. Delivery fees never count towards it. (Basis to confirm
+  // with the merchant: before vs after coupon — see the launch-polish doc.)
+  const minOrder = toRupees(rules.minOrder ?? 0);
+  if (minOrder > 0 && subtotal < minOrder) {
+    return {
+      ok: false,
+      status: 400,
+      error: `Minimum order ₹${minOrder} hai — ₹${minOrder - subtotal} ka saamaan aur add karein`,
+    };
   }
 
   // ── Apply coupon (if any) via server-side validateCoupon ──
@@ -218,9 +241,7 @@ export async function priceOrder(
     couponCode = coupon.code;
   }
 
-  // ── Delivery fee ──
-  // toRupees() guards against any decimal drift from settings rows
-  const { fee: rawFee, freeAbove } = await deps.getDeliveryRules();
+  // ── Delivery fee (free-delivery threshold is inclusive, after coupon) ──
   const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
   const deliveryFee = subtotalAfterCoupon >= freeAbove ? 0 : toRupees(rawFee);
   const beforeWallet = subtotalAfterCoupon + deliveryFee;

@@ -36,6 +36,7 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useSettings } from "@/lib/store/settings";
 import { CATEGORIES_SEED } from "@/lib/constants";
+import { subcatsFor } from "@/lib/subcategories";
 import { shuffleForGrid, hashId } from "@/lib/product-order";
 import type { Product, Category } from "@/types";
 
@@ -150,30 +151,32 @@ function HomeContent({
   const searchParams = useMemo(() => new URLSearchParams(urlParams), [urlParams]);
   const router = useRouter();
   const urlSearch = searchParams.get("search") || "";
-  // ?category=<name> deep-links straight into a category (used by the
-  // /delivery/<sector> landing pages). Only seeds the initial state — the
-  // strip/grid keep owning it afterwards.
-  // ?category= deep links (sector pages, shared URLs). Derived-state pattern:
-  // the URL value wins whenever it changes; a tap on the strip overrides it
-  // until the URL changes again. No effect needed, so back/forward and
-  // in-page links to /?category=X all stay in sync.
+  // The URL is the source of truth for category + subcategory (AM-10): the
+  // strip, the grid tiles and "See all" push `/?category=…[&sub=…]`, so a
+  // copied link, a refresh and the Back button all restore the same view.
   const rawUrlCategory = searchParams.get("category");
-  const urlCategory =
+  const selectedCategory =
     rawUrlCategory && CATEGORIES_SEED.some((c) => c.name === rawUrlCategory) ? rawUrlCategory : null;
-  const [catState, setCatState] = useState<{ url: string | null; value: string | null }>({
-    url: urlCategory,
-    value: urlCategory,
-  });
-  const selectedCategory = catState.url === urlCategory ? catState.value : urlCategory;
+  const rawUrlSub = searchParams.get("sub");
+  const selectedSub =
+    selectedCategory && rawUrlSub && subcatsFor(selectedCategory).some((s) => s.name === rawUrlSub)
+      ? rawUrlSub
+      : null;
   const setSelectedCategory = useCallback(
-    (value: string | null) => setCatState({ url: urlCategory, value }),
-    [urlCategory],
+    (value: string | null) => {
+      router.push(value ? `/?category=${encodeURIComponent(value)}` : "/", { scroll: false });
+    },
+    [router],
   );
-  const [selectedSub, setSelectedSub] = useState<string | null>(null);
-  // Reset the subcategory whenever the parent category changes (or clears).
-  useEffect(() => {
-    setSelectedSub(null);
-  }, [selectedCategory]);
+  const setSelectedSub = useCallback(
+    (value: string | null) => {
+      if (!selectedCategory) return;
+      const qs = new URLSearchParams({ category: selectedCategory });
+      if (value) qs.set("sub", value);
+      router.replace(`/?${qs.toString()}`, { scroll: false });
+    },
+    [router, selectedCategory],
+  );
   const [localSearch, setLocalSearch] = useState(urlSearch);
   // Keep the search box in sync with the ?search= URL param. Without this the
   // header search did nothing when you were *already* on the home page (the URL
@@ -346,9 +349,8 @@ function HomeContent({
           <button
             onClick={() => {
               setLocalSearch("");
-              // Also drop ?search= from the URL, else the sync effect above
-              // would immediately repopulate the box from the stale param.
-              if (urlSearch) router.replace("/");
+              // Drop ?search= from the URL: the header box syncs from it.
+              router.push("/", { scroll: false });
             }}
             className="text-xs font-semibold text-saffron hover:underline"
           >

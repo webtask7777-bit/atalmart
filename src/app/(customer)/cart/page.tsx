@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag } from "lucide-react";
@@ -9,22 +10,31 @@ import { Button } from "@/components/ui/button";
 import { CouponInput } from "@/components/customer/coupon-input";
 import { calculateCouponDiscount } from "@/lib/constants";
 import { useSettings } from "@/lib/store/settings";
+import { resolveLines, summarizeLines, computeQuote } from "@/lib/cart-line";
+import { useStoreAvailability } from "@/lib/hooks/use-availability";
 
 export default function CartPage() {
-  const { items, updateQuantity, removeItem, clearCart, getTotal } = useCartStore();
+  const { items, updateQuantity, removeItem, clearCart } = useCartStore();
   const couponApplied = useCouponStore((s) => s.applied);
-  const { deliveryFee: DELIVERY_FEE, freeDeliveryAbove: FREE_DELIVERY_ABOVE } = useSettings();
+  const { deliveryFee, freeDeliveryAbove, minOrderAmount } = useSettings();
+  const availability = useStoreAvailability();
 
-  const subtotal = getTotal();
-  const couponDiscount = calculateCouponDiscount(couponApplied, subtotal);
-  const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
-  const deliveryFee = subtotalAfterCoupon >= FREE_DELIVERY_ABOVE ? 0 : DELIVERY_FEE;
-  const total = subtotalAfterCoupon + deliveryFee;
-  const mrpSavings = items.reduce(
-    (sum, i) => sum + (i.product.mrp - i.product.price) * i.quantity,
-    0,
-  );
-  const totalSavings = mrpSavings + couponDiscount + (DELIVERY_FEE - deliveryFee);
+  // One resolved view of every line (selected pack, price, MRP, label) —
+  // the same resolver the checkout, cart bar and order writer use.
+  const lines = useMemo(() => resolveLines(items), [items]);
+  const summary = useMemo(() => summarizeLines(lines), [lines]);
+  const couponDiscount = calculateCouponDiscount(couponApplied, summary.subtotal);
+  const quote = computeQuote({
+    subtotal: summary.subtotal,
+    couponDiscount,
+    deliveryFee,
+    freeDeliveryAbove,
+    minOrderAmount,
+  });
+  // Merchandise savings (selected-pack MRP − price) and the coupon are the
+  // customer's real savings; a waived delivery fee is shown on its own line.
+  const totalSavings = summary.merchandiseSavings + quote.couponDiscount;
+  const belowMinimum = quote.minOrderGap > 0;
 
   if (items.length === 0) {
     return (
@@ -50,6 +60,7 @@ export default function CartPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/"
+            aria-label="Continue shopping"
             className="p-2 rounded-full hover:bg-gray-50 transition-colors"
           >
             <ArrowLeft size={20} className="text-brown" />
@@ -67,87 +78,115 @@ export default function CartPage() {
         </button>
       </div>
 
+      {availability.blocked && (
+        <p
+          role="status"
+          className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900"
+        >
+          <span className="font-bold">{availability.title}.</span> {availability.body}
+        </p>
+      )}
+
       {/* Items */}
-      <div className="space-y-3 mb-6">
-        {items.map(({ product, quantity, variant }) => {
-          const unitPrice = variant?.price ?? product.price;
-          const unitMrp = variant?.mrp ?? product.mrp;
-          const stock = variant?.stock ?? product.stock;
-          const unitLabel = variant?.unit ?? product.unit;
-          const variantId = variant?.id ?? null;
-          const limitReached = quantity >= stock;
+      <ul className="space-y-3 mb-6" aria-label="Cart items">
+        {lines.map((line) => {
+          const limitReached = line.quantity >= line.stock;
+          const qtyLabel = `${line.displayName} quantity`;
           return (
-            <div
-              key={`${product.id}::${variantId ?? "default"}`}
+            <li
+              key={line.key}
               className="flex items-center gap-4 bg-white rounded-2xl p-4 border border-gray-100"
             >
               <div className="w-14 h-14 bg-gray-50 rounded-xl overflow-hidden shrink-0 relative">
-                {product.image_url ? (
+                {line.imageUrl ? (
                   <Image
-                    src={product.image_url}
-                    alt={product.name}
+                    src={line.imageUrl}
+                    alt=""
                     fill
                     sizes="56px"
                     className="object-contain p-1"
                   />
                 ) : (
-                  <span className="flex items-center justify-center text-2xl h-full">
+                  <span className="flex items-center justify-center text-2xl h-full" aria-hidden="true">
                     📦
                   </span>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-medium text-brown truncate">
-                  {product.name}
-                  {variant && <span className="text-saffron font-semibold"> · {variant.unit}</span>}
+                <h3 className="text-sm font-medium text-brown line-clamp-2 leading-snug">
+                  <Link href={`/product/${line.productId}`} className="hover:underline">
+                    {line.familyName}
+                  </Link>
                 </h3>
-                {!variant && <p className="text-xs text-gray-500">{unitLabel}</p>}
+                <p className="text-xs text-gray-500">
+                  {line.packLabel}
+                  <span className="text-gray-400"> · ₹{line.unitPrice} each</span>
+                </p>
                 <p className="text-sm font-bold text-brown mt-0.5">
-                  ₹{unitPrice * quantity}
-                  {unitMrp > unitPrice && (
+                  ₹{line.lineTotal}
+                  {line.lineMrp > line.lineTotal && (
                     <span className="text-xs text-gray-500 line-through ml-2 font-normal">
-                      ₹{unitMrp * quantity}
+                      ₹{line.lineMrp}
                     </span>
                   )}
                 </p>
+                {!line.available && (
+                  <p className="text-[11px] font-semibold text-red-600 mt-0.5">
+                    Abhi stock mein nahi — checkout se pehle hata dein
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 bg-indian-green rounded-lg overflow-hidden">
+                <div
+                  className="flex items-center gap-1 bg-indian-green rounded-lg overflow-hidden"
+                  role="group"
+                  aria-label={qtyLabel}
+                >
                   <button
+                    type="button"
                     onClick={() =>
-                      quantity === 1
-                        ? removeItem(product.id, variantId)
-                        : updateQuantity(product.id, quantity - 1, variantId)
+                      line.quantity === 1
+                        ? removeItem(line.productId, line.variantId)
+                        : updateQuantity(line.productId, line.quantity - 1, line.variantId)
                     }
-                    className="p-1.5 text-white hover:bg-green-700 transition-colors"
+                    aria-label={`Decrease ${qtyLabel}`}
+                    className="min-w-[36px] min-h-[36px] flex items-center justify-center text-white hover:bg-green-700 transition-colors"
                   >
-                    <Minus size={14} strokeWidth={3} />
+                    <Minus size={14} strokeWidth={3} aria-hidden="true" />
                   </button>
-                  <span className="text-sm font-bold text-white min-w-[20px] text-center">
-                    {quantity}
+                  <span
+                    className="text-sm font-bold text-white min-w-[20px] text-center"
+                    aria-live="polite"
+                    aria-atomic="true"
+                  >
+                    {line.quantity}
                   </span>
                   <button
+                    type="button"
                     onClick={() =>
-                      !limitReached && updateQuantity(product.id, quantity + 1, variantId)
+                      !limitReached &&
+                      updateQuantity(line.productId, line.quantity + 1, line.variantId)
                     }
                     disabled={limitReached}
-                    className="p-1.5 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                    aria-label={`Increase ${qtyLabel}`}
+                    className="min-w-[36px] min-h-[36px] flex items-center justify-center text-white hover:bg-green-700 transition-colors disabled:opacity-50"
                   >
-                    <Plus size={14} strokeWidth={3} />
+                    <Plus size={14} strokeWidth={3} aria-hidden="true" />
                   </button>
                 </div>
                 <button
-                  onClick={() => removeItem(product.id, variantId)}
-                  className="p-1.5 text-gray-500 hover:text-red-500 transition-colors"
-                  aria-label="remove"
+                  type="button"
+                  onClick={() => removeItem(line.productId, line.variantId)}
+                  className="min-w-[36px] min-h-[36px] flex items-center justify-center text-gray-500 hover:text-red-500 transition-colors"
+                  aria-label={`Remove ${line.displayName} from cart`}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       {/* Coupon */}
       <div className="mb-6">
@@ -159,31 +198,47 @@ export default function CartPage() {
         <h3 className="font-bold text-brown mb-3">Bill Details</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between text-gray-600">
-            <span>Item Total</span>
-            <span>₹{subtotal}</span>
+            <span>Item Total ({summary.itemCount} item{summary.itemCount === 1 ? "" : "s"})</span>
+            <span>
+              {summary.mrpTotal > summary.subtotal && (
+                <span className="text-gray-400 line-through mr-2">₹{summary.mrpTotal}</span>
+              )}
+              ₹{quote.subtotal}
+            </span>
           </div>
-          {couponDiscount > 0 && couponApplied && (
+          {summary.merchandiseSavings > 0 && (
+            <div className="flex justify-between text-indian-green">
+              <span>MRP savings</span>
+              <span>− ₹{summary.merchandiseSavings}</span>
+            </div>
+          )}
+          {quote.couponDiscount > 0 && couponApplied && (
             <div className="flex justify-between text-indian-green">
               <span>Coupon ({couponApplied.code})</span>
-              <span>− ₹{couponDiscount}</span>
+              <span>− ₹{quote.couponDiscount}</span>
             </div>
           )}
           <div className="flex justify-between text-gray-600">
             <span>Delivery Fee</span>
-            {deliveryFee === 0 ? (
-              <span className="text-indian-green font-medium">FREE</span>
+            {quote.deliveryFee === 0 ? (
+              <span className="text-indian-green font-medium">
+                {quote.deliveryWaived > 0 && (
+                  <span className="text-gray-400 line-through mr-1 font-normal">₹{quote.deliveryWaived}</span>
+                )}
+                FREE
+              </span>
             ) : (
-              <span>₹{deliveryFee}</span>
+              <span>₹{quote.deliveryFee}</span>
             )}
           </div>
-          {deliveryFee > 0 && (
-            <p className="text-xs text-saffron">
-              Add ₹{FREE_DELIVERY_ABOVE - subtotalAfterCoupon} more for free delivery
+          {quote.freeDeliveryGap > 0 && (
+            <p className="text-xs text-saffron-deep">
+              ₹{quote.freeDeliveryGap} ka saamaan aur add karein — delivery free (₹{freeDeliveryAbove}+ par)
             </p>
           )}
           <div className="border-t border-gray-100 pt-2 flex justify-between font-bold text-brown text-base">
             <span>Grand Total</span>
-            <span>₹{total}</span>
+            <span>₹{quote.total}</span>
           </div>
           {totalSavings > 0 && (
             <div className="mt-2 -mx-2 px-3 py-1.5 bg-green-light rounded-lg text-center text-xs font-bold text-indian-green">
@@ -193,13 +248,26 @@ export default function CartPage() {
         </div>
       </div>
 
+      {belowMinimum && (
+        <p role="status" className="mb-3 text-center text-xs font-semibold text-amber-700">
+          Minimum order ₹{minOrderAmount} hai — ₹{quote.minOrderGap} ka saamaan aur add karein
+        </p>
+      )}
+
       {/* Checkout */}
-      <Link href="/checkout" className="block">
-        <Button size="lg" className="w-full">
+      {belowMinimum ? (
+        <Button size="lg" className="w-full" disabled>
           <ShoppingBag size={18} />
-          Proceed to Checkout — ₹{total}
+          Add ₹{quote.minOrderGap} more to checkout
         </Button>
-      </Link>
+      ) : (
+        <Link href="/checkout" className="block">
+          <Button size="lg" className="w-full">
+            <ShoppingBag size={18} />
+            Proceed to Checkout — ₹{quote.total}
+          </Button>
+        </Link>
+      )}
     </div>
   );
 }

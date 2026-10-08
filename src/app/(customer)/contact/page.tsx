@@ -1,5 +1,6 @@
 import { Mail, MapPin, Phone } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
+import { DEFAULT_REPORT_WINDOW_HOURS } from "@/lib/policy";
 
 export const metadata = {
   title: "Contact Us",
@@ -67,7 +68,7 @@ export default function ContactPage() {
         <p className="text-[13px] text-gray-600 mt-1 leading-relaxed">
           Apne order ka live status <a href="/orders" className="text-saffron font-medium hover:underline">My Orders</a> page
           par track kar sakte hain. Damaged ya galat item ke liye replacement
-          ki request delivery ke 24 ghante ke andar kar sakte hain.
+          ki request delivery ke {DEFAULT_REPORT_WINDOW_HOURS} ghante ke andar kar sakte hain.
         </p>
       </section>
     </div>

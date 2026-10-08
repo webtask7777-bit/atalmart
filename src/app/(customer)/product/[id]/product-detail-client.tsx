@@ -28,35 +28,34 @@ import { ProductCard } from "@/components/customer/product-card";
 import { CartBar } from "@/components/customer/cart-bar";
 import { Button } from "@/components/ui/button";
 import { ProductReviews } from "@/components/customer/product-reviews";
-import { FREE_DELIVERY_ABOVE } from "@/lib/constants";
+import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/lib/constants";
 import { formatRupees } from "@/lib/money";
 import { createClient } from "@/lib/supabase/client";
 import { isDemoMode } from "@/lib/supabase/helpers";
 import { shuffleForGrid } from "@/lib/product-order";
-import type { ProductVariant } from "@/types";
+import { familyName, packagingType, siblingKey } from "@/lib/product-name";
+import { effectiveReturnPolicy, formatReportWindow } from "@/lib/policy";
+import { useStoreAvailability } from "@/lib/hooks/use-availability";
+import { useSettings } from "@/lib/store/settings";
+import type { CustomerCare, ProductVariant } from "@/types";
 
 // ── Sibling size detection ───────────────────────────────────────
-// Extract base product name by stripping size/weight in parentheses,
-// "Pack of N", AND trailing packaging-type words (Pouch, Bag, Tin, etc.)
-// so siblings like "Pouch (1 kg)" and "Bag (5 kg)" group together.
-const PACKAGING_RE = /\s+(Pouch|Bag|Pack|Box|Tin|Jar|Pet|Bottle|Carton|Can|Sachet|Refill|Tetrapack|Tetra Pack|Cup|Tub|Tray|Block)\s*$/i;
+// Separate catalogue rows that share a family name ("… Pouch (1 kg)" and
+// "… Bag (5 kg)") are offered as sizes of one product. Name helpers live in
+// src/lib/product-name.ts so cart/checkout/order labels use the same split.
+const getBaseName = siblingKey;
+const getPackagingType = packagingType;
 
-function getBaseName(name: string): string {
-  return name
-    .replace(/\s*Pack of \d+\s*/gi, " ")
-    .replace(/\s*\(.*?\)\s*$/, "")
-    .replace(PACKAGING_RE, "")
-    .replace(/\s+/g, " ")
-    .trim();
+// Seed data stamped most products with a support contact that doesn't exist
+// (support@atalmart.in / +91-91120-00000). Never render it; the real order
+// support comes from constants. Anything else is a genuine brand contact.
+function isPlaceholderCare(cc: CustomerCare | null | undefined): boolean {
+  if (!cc) return true;
+  return /@atalmart\.in$/i.test(cc.email ?? "") || /91120.?00000/.test(cc.phone ?? "");
 }
-
-// Pull packaging-type word out of the product name (e.g. "Pouch", "Bag")
-// so the size selector can show "Pouch · 1 kg" instead of two identical
-// "1 kg" buttons when only the packaging differs.
-function getPackagingType(name: string): string | null {
-  const stripped = name.replace(/\s*\(.*?\)\s*$/, "");
-  const match = stripped.match(PACKAGING_RE);
-  return match ? match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase() : null;
+// "Hours" must contain hours — seed rows put an organisation/location there.
+function looksLikeHours(s: string | undefined): s is string {
+  return !!s && /(\d\s*(am|pm|baje)|\d{1,2}:\d{2}|24\s*[x×/]\s*7|\d\s*[-–]\s*\d)/i.test(s);
 }
 
 function escapeLike(str: string): string {
@@ -98,8 +97,12 @@ function useSiblingProducts(product: { id: string; name: string } | null) {
         .eq("active", true)
         .order("price");
 
-      if (!cancelled && data && data.length > 1) {
-        setSiblings(data);
+      // The ILIKE prefix is loose ("Amul Taaza" also matches "Amul Taaza
+      // Tetrapack"); keep only rows with the SAME family key, so a different
+      // format never masquerades as a size of this product.
+      const same = (data ?? []).filter((s) => getBaseName(s.name) === baseName);
+      if (!cancelled && same.length > 1) {
+        setSiblings(same);
       } else if (!cancelled) {
         setSiblings([]);
       }
@@ -131,12 +134,17 @@ export function ProductDetailClient() {
 
   const { items, addItem, updateQuantity, removeItem } = useCartStore();
   const { has: isWishlisted, toggle: toggleWishlist } = useWishlistStore();
+  const availability = useStoreAvailability();
+  const { freeDeliveryAbove } = useSettings();
 
   // 18+ gate — block deep-links to tobacco (Paan Corner) products until confirmed.
   const ageVerified = useAgeGateStore((s) => s.verified);
   const ageHydrated = useAgeGateHydrated();
 
   // ── Sibling size products (same base name, different sizes) ────
+  // Only consulted when the product has NO pack-size variants: a product
+  // with variants is its own size picker, and showing both selectors put
+  // two different prices for "1 L" on one page (launch audit AM-01).
   const siblings = useSiblingProducts(product);
 
   // ── Variant selection ───────────────────────────────────────────
@@ -227,15 +235,23 @@ export function ProductDetailClient() {
   }
 
   // Active pricing source — variant overrides product when selected.
-  const displayPrice = selectedVariant?.price ?? product.price;
-  const displayMrp = selectedVariant?.mrp ?? product.mrp;
+  const displayPrice = Math.round(selectedVariant?.price ?? product.price);
+  const displayMrp = Math.max(displayPrice, Math.round(selectedVariant?.mrp ?? product.mrp));
   const displayStock = selectedVariant?.stock ?? product.stock;
   const displayUnit = selectedVariant?.unit ?? product.unit;
+  // With variants the catalogue name's own "(500 ml)" would contradict a
+  // selected 1 L pack — show the size-free family name and let the selector
+  // + unit line carry the pack. Single-pack products keep their full name.
+  const titleName = hasVariants ? familyName(product.name) : product.name;
+  const sellableLabel = hasVariants ? `${titleName} (${displayUnit})` : product.name;
+  const showSiblingPicker = !hasVariants && siblings.length > 1;
+  const policy = effectiveReturnPolicy(product.category?.name);
+  const brandCare = isPlaceholderCare(product.customer_care) ? null : product.customer_care;
   // (Image gallery hooks are declared earlier — before any early returns —
   // so React's hook order rule isn't violated.)
   const displayImage = galleryImages[activeImageIdx] ?? null;
 
-  const discount = Math.round(((displayMrp - displayPrice) / displayMrp) * 100);
+  const discount = displayMrp > 0 ? Math.round(((displayMrp - displayPrice) / displayMrp) * 100) : 0;
   const savings = displayMrp - displayPrice;
   const inStock = displayStock > 0;
   // Shuffle first, THEN slice — otherwise the top 6 in name-sorted order are
@@ -253,7 +269,7 @@ export function ProductDetailClient() {
         <button
           onClick={() => router.back()}
           className="p-2 -ml-2 rounded-lg hover:bg-gray-50"
-          aria-label="back"
+          aria-label="Go back"
         >
           <ChevronLeft size={22} className="text-brown" />
         </button>
@@ -275,11 +291,11 @@ export function ProductDetailClient() {
           </button>
           <button
             className="p-2 rounded-lg hover:bg-gray-50"
-            aria-label="share"
+            aria-label="Share this product"
             onClick={async () => {
               if (navigator.share) {
                 try {
-                  await navigator.share({ title: product.name, url: window.location.href });
+                  await navigator.share({ title: sellableLabel, url: window.location.href });
                 } catch {
                   // user cancelled
                 }
@@ -311,7 +327,7 @@ export function ProductDetailClient() {
               {displayImage ? (
                 <Image
                   src={displayImage}
-                  alt={product.name}
+                  alt={sellableLabel}
                   fill
                   sizes="(max-width: 768px) 100vw, 500px"
                   className="object-contain p-6"
@@ -329,6 +345,8 @@ export function ProductDetailClient() {
                   <button
                     key={src}
                     onClick={() => setActiveImageIdx(idx)}
+                    aria-label={`Show image ${idx + 1} of ${Math.min(galleryImages.length, 5)}`}
+                    aria-pressed={idx === activeImageIdx}
                     className={`relative aspect-square bg-[#f7f7f7] rounded-lg overflow-hidden border-2 transition-colors ${
                       idx === activeImageIdx
                         ? "border-saffron"
@@ -353,7 +371,7 @@ export function ProductDetailClient() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-xl md:text-2xl font-bold text-brown leading-tight">
-                  {product.name}
+                  {titleName}
                 </h1>
                 {product.name_hi && (
                   <p className="text-sm text-brown-light mt-0.5">
@@ -361,19 +379,35 @@ export function ProductDetailClient() {
                   </p>
                 )}
               </div>
-              <span className="shrink-0 inline-flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold text-gray-700">
-                <Clock size={11} />
-                QUICK
-              </span>
+              {availability.state === "open" ? (
+                <span className="shrink-0 inline-flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded text-[10px] font-bold text-gray-700">
+                  <Clock size={11} aria-hidden="true" />
+                  QUICK
+                </span>
+              ) : availability.blocked ? (
+                <span className="shrink-0 inline-flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded text-[10px] font-bold text-amber-900">
+                  {availability.title}
+                </span>
+              ) : null}
             </div>
 
-            <p className="text-sm text-gray-500 mt-3">{displayUnit}</p>
+            <p className="text-sm text-gray-500 mt-3">
+              {hasVariants ? (
+                <>
+                  Selected pack: <span className="font-semibold text-brown">{displayUnit}</span>
+                </>
+              ) : (
+                displayUnit
+              )}
+            </p>
 
-            {/* Sibling size picker (same product, different sizes) */}
-            {siblings.length > 1 && (
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-brown-light mb-2 uppercase tracking-wide">
-                  Available Sizes
+            {/* Sibling size picker — separate catalogue rows of one family.
+                Shown only when this product has no variants of its own, so
+                a page never carries two pack selectors (AM-01). */}
+            {showSiblingPicker && (
+              <div className="mt-4" role="group" aria-labelledby="size-picker-label">
+                <p id="size-picker-label" className="text-xs font-semibold text-brown-light mb-2 uppercase tracking-wide">
+                  Select size
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {siblings.map((s) => {
@@ -386,7 +420,9 @@ export function ProductDetailClient() {
                         onClick={() => {
                           if (!isActive) router.push(`/product/${s.id}`);
                         }}
-                        className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                        aria-pressed={isActive}
+                        aria-label={`${label}, ${formatRupees(s.price)}`}
+                        className={`min-h-[44px] px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                           isActive
                             ? "border-indian-green bg-green-50 text-indian-green ring-1 ring-indian-green"
                             : "border-gray-200 text-brown hover:border-saffron"
@@ -408,11 +444,12 @@ export function ProductDetailClient() {
               </div>
             )}
 
-            {/* Variant picker */}
+            {/* Variant picker — the ONE pack selector for products with
+                pack-size variants. Every price/label on the page follows it. */}
             {hasVariants && (
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-brown-light mb-2 uppercase tracking-wide">
-                  Select Unit
+              <div className="mt-4" role="group" aria-labelledby="pack-picker-label">
+                <p id="pack-picker-label" className="text-xs font-semibold text-brown-light mb-2 uppercase tracking-wide">
+                  Select pack
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {variants.map((v) => {
@@ -423,7 +460,9 @@ export function ProductDetailClient() {
                         key={v.id}
                         disabled={oos}
                         onClick={() => setSelectedVariantId(v.id)}
-                        className={`relative px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
+                        aria-pressed={isSelected}
+                        aria-label={`${v.unit}, ${formatRupees(v.price)}${oos ? ", out of stock" : ""}`}
+                        className={`relative min-h-[44px] px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
                           isSelected
                             ? "border-indian-green bg-green-50 text-indian-green"
                             : "border-gray-200 text-brown hover:border-saffron"
@@ -450,10 +489,11 @@ export function ProductDetailClient() {
               </div>
             )}
 
-            {/* Price */}
-            <div className="mt-4 flex items-end gap-3 flex-wrap">
+            {/* Price — always for the selected pack; the unit sits beside it */}
+            <div className="mt-4 flex items-end gap-3 flex-wrap" aria-live="polite">
               <span className="text-3xl font-bold text-brown leading-none">
                 {formatRupees(displayPrice)}
+                <span className="text-sm font-semibold text-gray-500 ml-1.5">/ {displayUnit}</span>
               </span>
               {discount > 0 && (
                 <>
@@ -481,30 +521,46 @@ export function ProductDetailClient() {
                   onClick={() => addItem(product, selectedVariant)}
                 >
                   Add to Cart — {formatRupees(displayPrice)}
+                  {hasVariants && <span className="font-normal opacity-90"> · {displayUnit}</span>}
                 </Button>
               ) : (
-                <div className="flex items-center justify-between bg-indian-green text-white rounded-xl overflow-hidden">
+                <div
+                  className="flex items-center justify-between bg-indian-green text-white rounded-xl overflow-hidden"
+                  role="group"
+                  aria-label={`${sellableLabel} quantity`}
+                >
                   <button
+                    type="button"
                     onClick={() =>
                       quantity === 1
                         ? removeItem(product.id, selectedVariant?.id ?? null)
                         : updateQuantity(product.id, quantity - 1, selectedVariant?.id ?? null)
                     }
+                    aria-label={`Decrease ${sellableLabel} quantity`}
                     className="flex-1 py-3.5 hover:bg-green-700 transition-colors flex justify-center"
                   >
-                    <Minus size={20} strokeWidth={3} />
+                    <Minus size={20} strokeWidth={3} aria-hidden="true" />
                   </button>
-                  <span className="text-lg font-bold px-4">{quantity}</span>
+                  <span className="text-lg font-bold px-4" aria-live="polite" aria-atomic="true">
+                    {quantity}
+                  </span>
                   <button
+                    type="button"
                     onClick={() =>
                       updateQuantity(product.id, quantity + 1, selectedVariant?.id ?? null)
                     }
                     disabled={quantity >= displayStock}
+                    aria-label={`Increase ${sellableLabel} quantity`}
                     className="flex-1 py-3.5 hover:bg-green-700 transition-colors flex justify-center disabled:opacity-50"
                   >
-                    <Plus size={20} strokeWidth={3} />
+                    <Plus size={20} strokeWidth={3} aria-hidden="true" />
                   </button>
                 </div>
+              )}
+              {availability.blocked && inStock && (
+                <p role="status" className="text-xs text-amber-800 mt-2 font-medium">
+                  {availability.title} — {availability.body}
+                </p>
               )}
               {inStock && displayStock < 10 && (
                 <p className="text-xs text-orange-600 mt-2 font-semibold">
@@ -513,13 +569,17 @@ export function ProductDetailClient() {
               )}
             </div>
 
-            {/* Promise strip */}
+            {/* Promise strip — no delivery promise while orders are paused */}
             <div className="mt-5 grid grid-cols-3 gap-2 text-center">
-              <PromiseChip icon={<Clock size={16} />} label="Quick" sub="delivery" />
+              {availability.state === "open" ? (
+                <PromiseChip icon={<Clock size={16} />} label="Quick" sub="delivery" />
+              ) : (
+                <PromiseChip icon={<Clock size={16} />} label="Orders" sub="paused" muted />
+              )}
               <PromiseChip
                 icon={<Truck size={16} />}
-                label={`Free above`}
-                sub={`₹${FREE_DELIVERY_ABOVE}`}
+                label="Free delivery"
+                sub={`₹${freeDeliveryAbove}+ orders`}
               />
               <PromiseChip icon={<ShieldCheck size={16} />} label="100%" sub="genuine" />
             </div>
@@ -615,29 +675,60 @@ export function ProductDetailClient() {
             </Section>
           )}
 
-          {/* Return Policy */}
-          {product.return_policy && (
-            <Section title="Return Policy">
-              <p className="text-sm text-brown-light leading-relaxed">
-                {product.return_policy}
+          {/* Return policy — rendered from the single policy configuration
+              (src/lib/policy.ts), the same source as the FAQ, the refund page
+              and the return-window check. The product row's free-text
+              return_policy is NOT shown: seed rows disagreed with it (AM-07). */}
+          <Section title="Return Policy">
+            <div className="text-sm text-brown-light leading-relaxed space-y-1.5">
+              <p>
+                Delivery ke <strong className="text-brown">{formatReportWindow(policy.reportWindowHours)}</strong> ke
+                andar damaged, galat, expired ya missing item report karein — replacement ya full refund.
               </p>
-            </Section>
-          )}
+              {policy.note && <p>{policy.note}</p>}
+              <p className="text-xs text-gray-500">
+                Refund: {policy.refundTimeline}{" "}
+                <Link href="/refund-policy" className="text-saffron hover:underline">
+                  Poori policy
+                </Link>
+              </p>
+            </div>
+          </Section>
 
-          {/* Customer Care */}
-          {product.customer_care && (
-            <Section title="Customer Care">
-              <div className="text-sm text-brown-light space-y-1">
-                {product.customer_care.email && (
-                  <p>Email: <a href={`mailto:${product.customer_care.email}`} className="text-saffron hover:underline">{product.customer_care.email}</a></p>
-                )}
-                {product.customer_care.phone && (
-                  <p>Phone: <a href={`tel:${product.customer_care.phone}`} className="text-saffron hover:underline">{product.customer_care.phone}</a></p>
-                )}
-                {product.customer_care.hours && <p>Hours: {product.customer_care.hours}</p>}
+          {/* Order support (Atalmart) vs brand contact (manufacturer) */}
+          <Section title="Customer Care">
+            <div className="text-sm text-brown-light space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atalmart order support</p>
+                <p>
+                  Phone:{" "}
+                  <a href={`tel:+91${SUPPORT_PHONE}`} className="text-saffron hover:underline">
+                    +91 {SUPPORT_PHONE}
+                  </a>
+                </p>
+                <p>
+                  Email:{" "}
+                  <a href={`mailto:${SUPPORT_EMAIL}`} className="text-saffron hover:underline">
+                    {SUPPORT_EMAIL}
+                  </a>
+                </p>
               </div>
-            </Section>
-          )}
+              {brandCare && (brandCare.email || brandCare.phone) && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Brand / manufacturer contact
+                  </p>
+                  {brandCare.email && (
+                    <p>Email: <a href={`mailto:${brandCare.email}`} className="text-saffron hover:underline">{brandCare.email}</a></p>
+                  )}
+                  {brandCare.phone && (
+                    <p>Phone: <a href={`tel:${brandCare.phone}`} className="text-saffron hover:underline">{brandCare.phone}</a></p>
+                  )}
+                  {looksLikeHours(brandCare.hours) && <p>Hours: {brandCare.hours}</p>}
+                </div>
+              )}
+            </div>
+          </Section>
 
           {/* Disclaimer */}
           {product.disclaimer && (
@@ -678,14 +769,16 @@ function PromiseChip({
   icon,
   label,
   sub,
+  muted = false,
 }: {
   icon: React.ReactNode;
   label: string;
   sub: string;
+  muted?: boolean;
 }) {
   return (
-    <div className="bg-saffron-light rounded-lg p-2 border border-orange-100">
-      <div className="text-saffron mx-auto w-fit">{icon}</div>
+    <div className={`rounded-lg p-2 border ${muted ? "bg-amber-50 border-amber-200" : "bg-saffron-light border-orange-100"}`}>
+      <div className={`${muted ? "text-amber-700" : "text-saffron"} mx-auto w-fit`} aria-hidden="true">{icon}</div>
       <p className="text-[11px] font-bold text-brown mt-1 leading-tight">{label}</p>
       <p className="text-[10px] text-brown-light leading-tight">{sub}</p>
     </div>

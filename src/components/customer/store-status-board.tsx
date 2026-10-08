@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSettings, STORE_STATUS_COPY } from "@/lib/store/settings";
+import { useStoreAvailability } from "@/lib/hooks/use-availability";
 import { Zap, Clock, MapPin, ChevronDown } from "lucide-react";
 import { APP_NAME } from "@/lib/constants";
 import { Logo } from "@/components/ui/logo";
@@ -59,13 +60,15 @@ export function StoreStatusBoard() {
  * title + message on one line from sm up. Dark-on-amber for AA contrast.
  */
 export function BusyStrip() {
-  const { storeStatus, storeStatusMessage } = useSettings();
+  const { storeStatus } = useSettings();
+  const availability = useStoreAvailability();
   const [open, setOpen] = useState(false);
   if (storeStatus !== "busy") return null;
-  const copy = STORE_STATUS_COPY.busy;
-  const body = storeStatusMessage.trim() || copy.body;
+  // Same state + copy as the header chip, product pills and checkout CTA.
+  const copy = { title: availability.title, body: availability.body };
+  const body = copy.body;
   return (
-    <div className="bg-amber-400 text-amber-950">
+    <div className="bg-amber-400 text-amber-950" role="status">
       <div className="max-w-7xl mx-auto px-3 md:px-4">
         {/* Phones: one line + tap to expand */}
         <button

@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   APP_NAME,
-  RETURN_WINDOW_HOURS,
-  RETURN_REASONS,
   SUPPORT_PHONE,
   SUPPORT_EMAIL,
 } from "@/lib/constants";
+import { effectiveReturnPolicy, CATEGORY_EXCEPTIONS } from "@/lib/policy";
 
 export const metadata: Metadata = {
   title: "Cancellation & Refund Policy",
@@ -14,9 +13,14 @@ export const metadata: Metadata = {
   alternates: { canonical: "/refund-policy" },
 };
 
-// Every rule here mirrors what the app actually enforces (constants.ts,
-// FAQ and Terms §5–6). Keep all three in sync when a rule changes.
+// Every rule here is rendered from the single policy configuration
+// (src/lib/policy.ts) that the product page, FAQ and the return-window
+// check also use. Change the rule there, not here.
 export default function RefundPolicyPage() {
+  const policy = effectiveReturnPolicy(null);
+  const exceptions = Object.entries(CATEGORY_EXCEPTIONS).filter(
+    ([, ex]) => ex.reportWindowHours != null && ex.reportWindowHours !== policy.reportWindowHours,
+  );
   return (
     <div className="max-w-3xl mx-auto px-4 pt-4 pb-24">
       <h1 className="text-xl font-bold text-brown">
@@ -57,14 +61,23 @@ export default function RefundPolicyPage() {
             2. Returns &amp; replacements
           </h2>
           <p>
-            Delivery ke <strong>{RETURN_WINDOW_HOURS} ghante</strong> ke andar
+            Delivery ke <strong>{policy.reportWindowHours} ghante</strong> ke andar
             return ya replacement request kar sakte hain, in cases mein:
           </p>
           <ul className="list-disc pl-5 mt-1 space-y-1">
-            {RETURN_REASONS.filter((r) => r !== "Other").map((r) => (
+            {policy.eligible.map((r) => (
               <li key={r}>{r}</li>
             ))}
           </ul>
+          {exceptions.length > 0 && (
+            <ul className="list-disc pl-5 mt-2 space-y-1">
+              {exceptions.map(([cat, ex]) => (
+                <li key={cat}>
+                  <strong>{cat}:</strong> report window {ex.reportWindowHours} ghante.
+                </li>
+              ))}
+            </ul>
+          )}
           <p className="mt-2">
             Request app se (order → &quot;Request return&quot;) ya support
             number par bhejein. Fresh items (dairy, fruits &amp; vegetables,
@@ -102,11 +115,12 @@ export default function RefundPolicyPage() {
           <h2 className="text-sm font-bold text-brown mb-1">
             4. Non-returnable items
           </h2>
-          <p>
-            Hygiene aur safety ke kaaran opened personal-care products, paan
-            corner (tobacco) items, aur wo products jinki packaging kholi ja
-            chuki ho (jab tak item damaged/galat na ho) return nahi hote.
-          </p>
+          <p>Hygiene aur safety ke kaaran ye items return nahi hote:</p>
+          <ul className="list-disc pl-5 mt-1 space-y-1">
+            {policy.notEligible.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
         </section>
 
         <section>

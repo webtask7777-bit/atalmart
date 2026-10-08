@@ -1,4 +1,5 @@
 import { APP_NAME } from "@/lib/constants";
+import { DEFAULT_REPORT_WINDOW_HOURS } from "@/lib/policy";
 
 export const metadata = {
   title: "FAQs",
@@ -13,11 +14,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Delivery charge kitna hai?",
-    a: "₹25 per order, lekin ₹299 se upar ke order par delivery bilkul free hai.",
+    a: "₹25 per order. ₹299 ya usse zyada ke order (coupon lagne ke baad) par delivery bilkul free hai.",
   },
   {
     q: "Minimum order value kya hai?",
-    a: "₹49.",
+    a: "₹49 ka saamaan (delivery charge isme nahi ginta).",
   },
   {
     q: "Kaunse payment methods available hain?",
@@ -33,7 +34,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Damaged ya galat item mile to kya karein?",
-    a: "Delivery ke 24 ghante ke andar replacement request kar sakte hain — full refund/replacement, koi sawaal nahi puchha jaayega.",
+    a: `Delivery ke ${DEFAULT_REPORT_WINDOW_HOURS} ghante ke andar replacement request kar sakte hain — full refund/replacement, koi sawaal nahi puchha jaayega. Fresh items (dairy, sabzi, meat) ke liye delivery ke turant baad photo ke saath report karein.`,
   },
   {
     q: "Order cancel kaise karein?",

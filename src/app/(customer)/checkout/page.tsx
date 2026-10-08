@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -43,6 +43,8 @@ import {
 } from "@/lib/razorpay-checkout";
 import { toast } from "sonner";
 import { showLocalOrderNotification } from "@/components/customer/notification-prompt";
+import { resolveLines, summarizeLines, computeQuote } from "@/lib/cart-line";
+import { useStoreAvailability } from "@/lib/hooks/use-availability";
 
 const LABEL_ICON: Record<SavedAddress["label"], React.ComponentType<{ size?: number; className?: string }>> = {
   Home: Home,
@@ -52,8 +54,9 @@ const LABEL_ICON: Record<SavedAddress["label"], React.ComponentType<{ size?: num
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getTotal, clearCart } = useCartStore();
+  const { items, clearCart } = useCartStore();
   const cartHydrated = useCartHydrated();
+  const availability = useStoreAvailability();
   const { user, profile, isDemo } = useAuth();
   const coupon = useCouponStore((s) => s.applied);
   const clearCoupon = useCouponStore((s) => s.clear);
@@ -63,6 +66,7 @@ export default function CheckoutPage() {
   const {
     deliveryFee: DELIVERY_FEE,
     freeDeliveryAbove: FREE_DELIVERY_ABOVE,
+    minOrderAmount: MIN_ORDER,
     codEnabled,
     onlinePaymentEnabled,
     serviceablePincodes,
@@ -84,17 +88,27 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [placed, setPlaced] = useState(false);
 
-  const subtotal = getTotal();
+  // One resolved view of every line — the same resolver the cart page uses,
+  // so the summary below can never show a different pack/price than the
+  // cart did (launch audit AM-02: a 1 L ₹59 line rendered as "(500 ml) ₹28").
+  const lines = useMemo(() => resolveLines(items), [items]);
+  const summary = useMemo(() => summarizeLines(lines), [lines]);
+  const subtotal = summary.subtotal;
   const couponDiscount = calculateCouponDiscount(coupon, subtotal);
-  const subtotalAfterCoupon = Math.max(0, subtotal - couponDiscount);
-  const deliveryFee = subtotalAfterCoupon >= FREE_DELIVERY_ABOVE ? 0 : DELIVERY_FEE;
-  const beforeWallet = subtotalAfterCoupon + deliveryFee;
-  // Wallet caps at total (can't go below 0); customer can opt out.
-  const walletApplied =
-    useWallet && walletBalance > 0
-      ? Math.min(walletBalance, beforeWallet)
-      : 0;
-  const total = Math.max(0, beforeWallet - walletApplied);
+  // Preview only — /api/orders/price is the authority (checked below).
+  const quote = computeQuote({
+    subtotal,
+    couponDiscount,
+    deliveryFee: DELIVERY_FEE,
+    freeDeliveryAbove: FREE_DELIVERY_ABOVE,
+    minOrderAmount: MIN_ORDER,
+    walletBalance,
+    useWallet,
+  });
+  const deliveryFee = quote.deliveryFee;
+  const walletApplied = quote.walletApplied;
+  const total = quote.total;
+  const canOrder = availability.canOrder || availability.state === "unknown";
 
   // Prefill recipient + phone from the logged-in profile. Profile arrives
   // async after mount, so this fills once it lands — but never overwrites
@@ -255,6 +269,7 @@ export default function CheckoutPage() {
           deliveryRules: {
             fee: DELIVERY_FEE,
             freeAbove: FREE_DELIVERY_ABOVE,
+            minOrder: MIN_ORDER,
           },
         },
       }),
@@ -648,21 +663,36 @@ export default function CheckoutPage() {
 
       <section className="bg-white rounded-2xl p-5 border border-gray-100 mb-6">
         <h3 className="font-bold text-brown mb-3">Order Summary</h3>
-        <div className="space-y-1.5 text-sm mb-3">
-          {items.map(({ product, quantity }) => (
-            <div key={product.id} className="flex justify-between text-gray-600">
-              <span className="truncate max-w-[60%]">
-                {product.name} x{quantity}
+        <ul className="space-y-1.5 text-sm mb-3" aria-label="Items">
+          {lines.map((line) => (
+            <li key={line.key} className="flex justify-between gap-3 text-gray-600">
+              <span className="truncate">
+                {line.displayName}
+                <span className="text-gray-400"> × {line.quantity}</span>
+                {line.quantity > 1 && (
+                  <span className="text-gray-400 text-xs"> (₹{line.unitPrice} each)</span>
+                )}
               </span>
-              <span>₹{product.price * quantity}</span>
-            </div>
+              <span className="shrink-0">₹{line.lineTotal}</span>
+            </li>
           ))}
-        </div>
+        </ul>
         <div className="border-t border-gray-100 pt-2 space-y-1.5 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>Subtotal</span>
-            <span>₹{subtotal}</span>
+            <span>
+              {summary.mrpTotal > subtotal && (
+                <span className="text-gray-400 line-through mr-2">₹{summary.mrpTotal}</span>
+              )}
+              ₹{subtotal}
+            </span>
           </div>
+          {summary.merchandiseSavings > 0 && (
+            <div className="flex justify-between text-indian-green">
+              <span>MRP savings</span>
+              <span>− ₹{summary.merchandiseSavings}</span>
+            </div>
+          )}
           {coupon && couponDiscount > 0 && (
             <div className="flex justify-between text-indian-green">
               <span>Coupon ({coupon.code})</span>
@@ -671,8 +701,24 @@ export default function CheckoutPage() {
           )}
           <div className="flex justify-between text-gray-600">
             <span>Delivery</span>
-            <span>{deliveryFee === 0 ? "FREE" : `₹${deliveryFee}`}</span>
+            <span>
+              {deliveryFee === 0 ? (
+                <>
+                  {quote.deliveryWaived > 0 && (
+                    <span className="text-gray-400 line-through mr-1">₹{quote.deliveryWaived}</span>
+                  )}
+                  <span className="text-indian-green font-medium">FREE</span>
+                </>
+              ) : (
+                `₹${deliveryFee}`
+              )}
+            </span>
           </div>
+          {quote.freeDeliveryGap > 0 && (
+            <p className="text-xs text-saffron-deep">
+              ₹{quote.freeDeliveryGap} ka saamaan aur add karein — delivery free (₹{FREE_DELIVERY_ABOVE}+ par)
+            </p>
+          )}
           {walletApplied > 0 && (
             <div className="flex justify-between text-indian-green">
               <span>Wallet credit applied</span>
@@ -711,23 +757,30 @@ export default function CheckoutPage() {
         )}
       </section>
 
-      {settings.storeStatus !== "open" && (
-        <p className="text-center text-xs font-semibold text-amber-600 -mb-2">
-          {settings.storeStatus === "opening_soon"
-            ? "Store abhi launch nahi hua — orders jaldi shuru honge."
-            : "Heavy rush ke kaaran naye orders kuch der ke liye paused hain."}
+      {availability.blocked && (
+        <p role="status" className="text-center text-xs font-semibold text-amber-700 mb-2">
+          {availability.title}. {availability.body}
+        </p>
+      )}
+      {quote.minOrderGap > 0 && (
+        <p role="status" className="text-center text-xs font-semibold text-amber-700 mb-2">
+          Minimum order ₹{MIN_ORDER} hai — ₹{quote.minOrderGap} ka saamaan aur add karein
         </p>
       )}
       <Button
         size="lg"
         className="w-full"
         loading={loading}
-        disabled={settings.storeStatus !== "open"}
+        disabled={!canOrder || quote.minOrderGap > 0}
         onClick={handlePlaceOrder}
       >
-        {settings.storeStatus !== "open"
-          ? "Orders paused"
-          : `Place Order — ₹${total}`}
+        {!canOrder
+          ? availability.state === "closed"
+            ? "Store closed"
+            : "Orders paused"
+          : quote.minOrderGap > 0
+            ? `Add ₹${quote.minOrderGap} more to order`
+            : `Place Order — ₹${total}`}
       </Button>
     </div>
   );

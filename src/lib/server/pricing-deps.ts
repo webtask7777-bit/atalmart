@@ -116,15 +116,16 @@ export function buildSupabasePricingDeps(
     getDeliveryRules: async () => {
       const { data } = await supabase
         .from("settings")
-        .select("delivery_fee, free_delivery_above")
+        .select("delivery_fee, free_delivery_above, min_order_amount")
         .eq("id", 1)
         .maybeSingle();
       const row = data as
-        | { delivery_fee: number; free_delivery_above: number }
+        | { delivery_fee: number; free_delivery_above: number; min_order_amount?: number | null }
         | null;
       return {
         fee: row?.delivery_fee ?? 25,
         freeAbove: row?.free_delivery_above ?? 299,
+        minOrder: row?.min_order_amount ?? 0,
       };
     },
   };

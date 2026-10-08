@@ -11,6 +11,17 @@
 import { createClient } from "@supabase/supabase-js";
 import { isDemoMode } from "@/lib/supabase/helpers";
 import { supabaseTransformUrl } from "@/lib/supabase-image-url";
+import { familyName, sellableName } from "@/lib/product-name";
+
+export interface PublicVariant {
+  id: string;
+  unit: string;
+  price: number;
+  mrp: number;
+  stock: number;
+  is_default: boolean;
+  sort_order: number;
+}
 
 export interface PublicProduct {
   id: string;
@@ -26,10 +37,47 @@ export interface PublicProduct {
   active: boolean;
   created_at: string;
   category: { name: string } | null;
+  /** Pack-size variants (migration 004). Empty for single-pack products. */
+  variants?: PublicVariant[] | null;
 }
 
 const PUBLIC_PRODUCT_SELECT =
-  "id,name,name_hi,description,price,mrp,unit,image_url,image_urls,stock,active,created_at,category:categories(name)";
+  "id,name,name_hi,description,price,mrp,unit,image_url,image_urls,stock,active,created_at,category:categories(name)," +
+  "variants:product_variants(id,unit,price,mrp,stock,is_default,sort_order)";
+
+/** The pack the page represents: the default variant when the product has
+ *  variants (the PDP, card and cart all start from it), else the product
+ *  row. The <title>, meta description and JSON-LD must quote THIS price —
+ *  the audit found the title saying ₹28 while the page sold the pack for ₹30. */
+export interface PrimaryOffer {
+  price: number;
+  mrp: number;
+  unit: string;
+  stock: number;
+  /** All sellable packs, for AggregateOffer. */
+  packs: { unit: string; price: number; stock: number }[];
+}
+
+export function primaryOffer(product: PublicProduct): PrimaryOffer {
+  const vs = (product.variants ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  if (vs.length === 0) {
+    return {
+      price: Math.round(product.price),
+      mrp: Math.round(product.mrp),
+      unit: product.unit,
+      stock: product.stock,
+      packs: [{ unit: product.unit, price: Math.round(product.price), stock: product.stock }],
+    };
+  }
+  const def = vs.find((v) => v.is_default) ?? vs[0];
+  return {
+    price: Math.round(def.price),
+    mrp: Math.round(def.mrp),
+    unit: def.unit,
+    stock: def.stock,
+    packs: vs.map((v) => ({ unit: v.unit, price: Math.round(v.price), stock: v.stock })),
+  };
+}
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -125,10 +173,14 @@ export function productOgImage(product: PublicProduct): string | null {
 }
 
 /**
- * "Name (unit)" — but most catalogue names already end in the pack size
- * ("… Pouch (1 kg)"), so only append the unit when it isn't in the name.
+ * "Family (pack)" for the primary offer. Most catalogue names already end in
+ * the pack size ("… Pouch (1 kg)"); for a product with variants the bracket
+ * in the name is replaced by the default pack so the title matches the page.
  */
 export function productDisplayName(product: PublicProduct): string {
+  const offer = primaryOffer(product);
+  const hasVariants = (product.variants?.length ?? 0) > 0;
+  if (hasVariants) return sellableName(product.name, offer.unit);
   const unit = product.unit?.trim();
   if (!unit) return product.name;
   const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
@@ -137,13 +189,19 @@ export function productDisplayName(product: PublicProduct): string {
     : `${product.name} (${unit})`;
 }
 
+/** Size-free name for JSON-LD `name` when packs are listed separately. */
+export function productFamilyName(product: PublicProduct): string {
+  return (product.variants?.length ?? 0) > 0 ? familyName(product.name) : product.name;
+}
+
 /** Short, honest description for meta tags when the catalogue has none. */
 export function productMetaDescription(product: PublicProduct): string {
   const custom = product.description?.trim();
   if (custom && custom.length > 30) return custom.slice(0, 160);
+  const offer = primaryOffer(product);
   const off =
-    product.mrp > product.price
-      ? ` MRP ₹${product.mrp}, ${Math.round(((product.mrp - product.price) / product.mrp) * 100)}% off.`
+    offer.mrp > offer.price
+      ? ` MRP ₹${offer.mrp}, ${Math.round(((offer.mrp - offer.price) / offer.mrp) * 100)}% off.`
       : "";
-  return `${productDisplayName(product)} sirf ₹${product.price} mein.${off} Naya Raipur (Atal Nagar) mein Atalmart se quick delivery.`;
+  return `${productDisplayName(product)} sirf ₹${offer.price} mein.${off} Naya Raipur (Atal Nagar) mein Atalmart se quick delivery.`;
 }

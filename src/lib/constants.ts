@@ -1,3 +1,5 @@
+import { DEFAULT_REPORT_WINDOW_HOURS, isWithinReportWindow } from "@/lib/policy";
+
 export const APP_NAME = "Atalmart";
 export const APP_TAGLINE = "Atal Nagar ki Atal Delivery";
 
@@ -234,15 +236,16 @@ export const RETURN_REASONS = [
   "Other",
 ];
 
-/** Window (hours) during which customer can request a return after delivery. */
-export const RETURN_WINDOW_HOURS = 24;
+/** Window (hours) during which customer can request a return after delivery.
+ *  Sourced from the single policy configuration (src/lib/policy.ts), which
+ *  also carries per-category exceptions. */
+export const RETURN_WINDOW_HOURS = DEFAULT_REPORT_WINDOW_HOURS;
 
 export function isWithinReturnWindow(
   deliveredAt: string | null | undefined,
+  categoryName?: string | null,
 ): boolean {
-  if (!deliveredAt) return false;
-  const elapsedHours = (Date.now() - new Date(deliveredAt).getTime()) / 3_600_000;
-  return elapsedHours <= RETURN_WINDOW_HOURS;
+  return isWithinReportWindow(deliveredAt, categoryName);
 }
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {

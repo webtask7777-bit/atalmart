@@ -112,4 +112,30 @@ html {
   .rail-x {
     scroll-behavior: auto;
   }
+  /* Every CSS animation/transition collapses to (effectively) instant —
+     hero autoplay, slide-in prompts, hover scaling, pulse badges. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Keyboard focus ─────────────────────────────────────────────────────
+   One visible ring for every focusable control (buttons, links, inputs,
+   radio cards). :focus-visible keeps it off mouse/touch taps. Saffron on
+   white is 2.85:1 alone, so the ring is doubled with a dark inner line. */
+:focus-visible {
+  outline: 2px solid var(--saffron-dark);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #fff;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline-offset: 0;
+  box-shadow: none;
 }
