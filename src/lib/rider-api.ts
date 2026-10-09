@@ -31,8 +31,12 @@ export interface RiderOrder {
 }
 
 export interface RiderStats {
-  today: { deliveries: number; earnings: number };
-  allTime: { deliveries: number; earnings: number };
+  /** 0 = fixed salary; the app hides per-delivery earnings then. */
+  payoutPerDelivery: number;
+  /** Daily bonus rule; target 0 = none. */
+  bonus: { target: number; amount: number };
+  today: { deliveries: number; earnings: number; bonusEarned: boolean };
+  allTime: { deliveries: number; earnings: number; bonusDays: number };
 }
 
 export function getToken(): string | null {

@@ -70,6 +70,13 @@ use real category data with the correct ids. Don't reintroduce
   (support@atalmart.in / 91120-00000) is seed data — the PDP hides it.
 - **Search**: `src/lib/search-rank.ts` — type aliases (milk/doodh/दूध…) and
   ranking; `?search=`, `?category=`, `?sub=` in the URL are the state.
+- **Rider pay**: `src/lib/rider-earnings.ts` is the only earnings rule, used
+  by `/api/rider/stats` and the admin riders page. Inputs from `settings`
+  (Admin → Settings → Delivery): `rider_payout_per_delivery` (024; 0 = fixed
+  salary, app shows counts only) and ONE daily bonus
+  `rider_bonus_target` / `rider_bonus_amount` (025; paid once per IST day the
+  target is met, 0 = off). Never show the customer's delivery fee as rider
+  income (it is ₹0 on free-delivery orders).
 - **Tests**: `npm test` (Node's built-in runner, `tests/`, `@/` alias via
   `tests/alias-loader.mjs`). Add a case there when touching money or policy.
   `npm run typecheck` before pushing. See `docs/launch-polish-2026-10-08.md`.

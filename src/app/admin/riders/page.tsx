@@ -27,6 +27,8 @@ import {
   deleteRider,
 } from "@/lib/hooks/use-admin";
 import { toast } from "sonner";
+import { useSettings } from "@/lib/store/settings";
+import { resolveBonusRule, summarizeRiderEarnings } from "@/lib/rider-earnings";
 import { validatePhone10 } from "@/lib/validators";
 import type { Rider, Order } from "@/types";
 
@@ -50,17 +52,24 @@ type RiderStats = {
   active: number; // currently assigned, not yet delivered
   cancelled: number;
   revenue: number;
-  earnings: number; // ₹20 per delivery (commission)
+  earnings: number; // deliveries × payout + daily bonus (src/lib/rider-earnings)
+  bonusDays: number;
   completionRate: number;
   rating: number; // synthesized 4.0-5.0 based on cancellation %
   lastDeliveryAt: string | null;
 };
 
-const COMMISSION_PER_DELIVERY = 20;
-
 export default function AdminRidersPage() {
   const { riders, loading, refetch } = useAdminRiders();
   const { orders } = useAdminOrders();
+  // Same rule as the rider app (/api/rider/stats): fixed payout per delivery,
+  // set under Settings → Delivery. Never the customer's delivery fee.
+  const { riderPayoutPerDelivery: payoutPerDelivery, riderBonusTarget, riderBonusAmount } =
+    useSettings();
+  const bonusRule = useMemo(
+    () => resolveBonusRule(riderBonusTarget, riderBonusAmount),
+    [riderBonusTarget, riderBonusAmount],
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -94,13 +103,16 @@ export default function AdminRidersPage() {
         active: active.length,
         cancelled: cancelled.length,
         revenue,
-        earnings: delivered.length * COMMISSION_PER_DELIVERY,
+        earnings: summarizeRiderEarnings(delivered, payoutPerDelivery, bonusRule).allTime
+          .earnings,
+        bonusDays: summarizeRiderEarnings(delivered, payoutPerDelivery, bonusRule).allTime
+          .bonusDays,
         completionRate,
         rating,
         lastDeliveryAt: lastDelivered?.delivered_at || lastDelivered?.placed_at || null,
       };
     });
-  }, [riders, orders]);
+  }, [riders, orders, payoutPerDelivery, bonusRule]);
 
   // ─── Overall KPIs ───
   const totals = useMemo(
@@ -370,6 +382,9 @@ function RiderCard({
   onDelete: () => void;
   onRefresh: () => void;
 }) {
+  const { riderPayoutPerDelivery: payoutPerDelivery, riderBonusTarget, riderBonusAmount } =
+    useSettings();
+  const bonusRule = resolveBonusRule(riderBonusTarget, riderBonusAmount);
   const r = stats.rider;
   return (
     <div
@@ -505,7 +520,23 @@ function RiderCard({
               value={`₹${stats.revenue.toLocaleString("en-IN")}`}
               accent="green"
             />
-            <Detail label="Earnings (₹20/order)" value={`₹${stats.earnings}`} accent="amber" />
+            <Detail
+              label={
+                payoutPerDelivery === 0
+                  ? bonusRule.target > 0
+                    ? `Bonus points (${bonusRule.amount} pts on ${bonusRule.target}/day, 1 pt = ₹1)`
+                    : "Payout"
+                  : `Earnings (₹${payoutPerDelivery}/delivery${bonusRule.target > 0 ? " + bonus" : ""})`
+              }
+              value={
+                payoutPerDelivery === 0
+                  ? bonusRule.target > 0
+                    ? `${stats.bonusDays} days · ${stats.earnings} pts = ₹${stats.earnings}`
+                    : "Fixed salary"
+                  : `₹${stats.earnings}`
+              }
+              accent="amber"
+            />
             <Detail
               label="Last delivery"
               value={stats.lastDeliveryAt ? formatRelative(stats.lastDeliveryAt) : "—"}

@@ -226,6 +226,30 @@ export default function SettingsAdminPage() {
               value={String(form.deliveryRadiusKm)}
               onChange={(e) => set("deliveryRadiusKm", Number(e.target.value) || 5)}
             />
+            <Input
+              label="Rider payout per delivery (₹, 0 = fixed salary)"
+              type="number"
+              value={String(form.riderPayoutPerDelivery)}
+              onChange={(e) =>
+                set("riderPayoutPerDelivery", Math.max(0, Number(e.target.value) || 0))
+              }
+            />
+            <Input
+              label="Rider daily bonus target (deliveries/day, 0 = off)"
+              type="number"
+              value={String(form.riderBonusTarget)}
+              onChange={(e) =>
+                set("riderBonusTarget", Math.max(0, Math.floor(Number(e.target.value) || 0)))
+              }
+            />
+            <Input
+              label="Rider daily bonus points (1 point = ₹1)"
+              type="number"
+              value={String(form.riderBonusAmount)}
+              onChange={(e) =>
+                set("riderBonusAmount", Math.max(0, Number(e.target.value) || 0))
+              }
+            />
           </div>
           <Input
             label="Serviceable pincodes (comma-separated)"

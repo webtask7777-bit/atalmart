@@ -17,6 +17,11 @@ export type SiteSettings = {
   minOrderAmount: number;
   deliveryRadiusKm: number;
   deliveryTimeMins: number;
+  /** Fixed ₹ paid to the rider per completed delivery (migration 024). */
+  riderPayoutPerDelivery: number;
+  /** Daily bonus (migration 025): deliveries/day needed, ₹ earned. 0 = off. */
+  riderBonusTarget: number;
+  riderBonusAmount: number;
   codEnabled: boolean;
   onlinePaymentEnabled: boolean;
   serviceablePincodes: string; // comma-separated
@@ -57,6 +62,9 @@ const DEFAULTS: SiteSettings = {
   minOrderAmount: 49,
   deliveryRadiusKm: 5,
   deliveryTimeMins: 10,
+  riderPayoutPerDelivery: 20,
+  riderBonusTarget: 0,
+  riderBonusAmount: 0,
   codEnabled: true,
   onlinePaymentEnabled: true,
   serviceablePincodes: "492101, 492014, 492015, 492018, 492030",
@@ -93,6 +101,9 @@ const OPERATIONAL_COLUMNS: Partial<Record<keyof SiteSettings, string>> = {
   minOrderAmount: "min_order_amount",
   deliveryRadiusKm: "delivery_radius_km",
   deliveryTimeMins: "delivery_time_mins",
+  riderPayoutPerDelivery: "rider_payout_per_delivery",
+  riderBonusTarget: "rider_bonus_target",
+  riderBonusAmount: "rider_bonus_amount",
   codEnabled: "cod_enabled",
   onlinePaymentEnabled: "online_payment_enabled",
   serviceablePincodes: "serviceable_pincodes",

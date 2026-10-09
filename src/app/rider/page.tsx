@@ -325,23 +325,60 @@ function Dashboard({
           {online ? "Online — taking orders" : "Offline — tap to go online"}
         </button>
 
-        {/* Stats */}
+        {/* Stats. Payout + daily bonus come from admin settings. payout 0 =
+            fixed salary (counts only); bonus.target 0 = no bonus. */}
         <div className="grid grid-cols-2 gap-3">
           <StatCard
             icon={<Package size={16} />}
-            label="Aaj deliveries"
-            value={stats ? String(stats.today.deliveries) : "—"}
+            label={
+              stats && stats.bonus.target > 0
+                ? `Aaj deliveries · target ${stats.bonus.target}`
+                : "Aaj deliveries"
+            }
+            value={
+              stats
+                ? stats.bonus.target > 0
+                  ? `${stats.today.deliveries}/${stats.bonus.target}`
+                  : String(stats.today.deliveries)
+                : "—"
+            }
           />
-          <StatCard
-            icon={<IndianRupee size={16} />}
-            label="Aaj kamai"
-            value={stats ? `₹${stats.today.earnings}` : "—"}
-            accent
-          />
+          {!stats ? (
+            <StatCard icon={<IndianRupee size={16} />} label="Aaj kamai" value="—" accent />
+          ) : stats.payoutPerDelivery > 0 ? (
+            <StatCard
+              icon={<IndianRupee size={16} />}
+              label="Aaj kamai"
+              value={`₹${stats.today.earnings}`}
+              accent
+            />
+          ) : stats.bonus.target > 0 ? (
+            <StatCard
+              icon={<IndianRupee size={16} />}
+              label="Aaj bonus points"
+              value={
+                stats.today.bonusEarned
+                  ? `${stats.bonus.amount} pts ✓`
+                  : `${stats.bonus.target - stats.today.deliveries} delivery aur`
+              }
+              accent
+            />
+          ) : (
+            <StatCard
+              icon={<Package size={16} />}
+              label="Total deliveries"
+              value={String(stats.allTime.deliveries)}
+              accent
+            />
+          )}
         </div>
         {stats && (
           <p className="text-[11px] text-gray-400 text-center -mt-1">
-            All-time: {stats.allTime.deliveries} deliveries · ₹{stats.allTime.earnings}
+            {stats.payoutPerDelivery === 0 && stats.bonus.target > 0
+              ? `${stats.bonus.target} deliveries/din = ${stats.bonus.amount} points (1 point = ₹1) · total ${stats.allTime.bonusDays * stats.bonus.amount} pts`
+              : stats.payoutPerDelivery === 0
+                ? "Fixed salary · delivery count ke hisaab se tracking"
+                : `All-time: ${stats.allTime.deliveries} deliveries · ₹${stats.allTime.earnings}${stats.bonus.target > 0 ? ` · bonus days: ${stats.allTime.bonusDays}` : ""}`}
           </p>
         )}
 
