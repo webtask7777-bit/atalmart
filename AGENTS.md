@@ -77,6 +77,10 @@ use real category data with the correct ids. Don't reintroduce
   `rider_bonus_target` / `rider_bonus_amount` (025; paid once per IST day the
   target is met, 0 = off). Never show the customer's delivery fee as rider
   income (it is ₹0 on free-delivery orders).
+- **Riders table is admin + service-role only** (migration 026). Customers
+  read their assigned rider through the `riders_public` view (safe columns,
+  only riders on the caller's own orders). Never join `riders(*)` from
+  customer-facing code — it leaked `access_code` to every logged-in user.
 - **Tests**: `npm test` (Node's built-in runner, `tests/`, `@/` alias via
   `tests/alias-loader.mjs`). Add a case there when touching money or policy.
   `npm run typecheck` before pushing. See `docs/launch-polish-2026-10-08.md`.

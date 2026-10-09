@@ -83,7 +83,9 @@ export function useOrders(options?: { limit?: number }) {
 
     let query = supabase
       .from("orders")
-      .select("*, items:order_items(*), rider:riders(*)")
+      // riders_public (migration 026): safe rider columns, only for riders on
+      // the caller's own orders. Customers cannot read `riders` directly.
+      .select("*, items:order_items(*), rider:riders_public(*)")
       .eq("user_id", user.id)
       .order("placed_at", { ascending: false });
     if (limit) query = query.limit(limit);
@@ -130,7 +132,7 @@ export function useOrder(id: string) {
     const supabase = createClient();
     const { data } = await supabase
       .from("orders")
-      .select("*, items:order_items(*, product:products(*)), rider:riders(*)")
+      .select("*, items:order_items(*, product:products(*)), rider:riders_public(*)")
       .eq("id", id)
       .single();
 
