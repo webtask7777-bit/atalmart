@@ -1,5 +1,6 @@
 import { APP_NAME } from "@/lib/constants";
 import { DEFAULT_REPORT_WINDOW_HOURS } from "@/lib/policy";
+import { FRESH_HANDLING } from "@/lib/fresh-handling";
 
 export const metadata = {
   title: "FAQs",
@@ -35,6 +36,10 @@ const FAQS: { q: string; a: string }[] = [
   {
     q: "Damaged ya galat item mile to kya karein?",
     a: `Delivery ke ${DEFAULT_REPORT_WINDOW_HOURS} ghante ke andar replacement request kar sakte hain — full refund/replacement, koi sawaal nahi puchha jaayega. Fresh items (dairy, sabzi, meat) ke liye delivery ke turant baad photo ke saath report karein.`,
+  },
+  {
+    q: "Sabzi aur fruits kaise saaf hote hain?",
+    a: `Har lot ${FRESH_HANDLING["Fruits & Vegetables"].badge} hota hai: ${FRESH_HANDLING["Fruits & Vegetables"].steps.map((s, i) => `${i + 1}) ${s.title} — ${s.detail}`).join(" ")} ${FRESH_HANDLING["Fruits & Vegetables"].footnote}`,
   },
   {
     q: "Order cancel kaise karein?",

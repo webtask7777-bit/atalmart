@@ -31,3 +31,16 @@ test("isWithinReportWindow honours a category exception", () => {
     CATEGORY_EXCEPTIONS.Dairy = prev;
   }
 });
+
+// ── Fresh-produce handling promise (src/lib/fresh-handling.ts) ──
+import { freshHandlingFor, FRESH_HANDLING } from "@/lib/fresh-handling";
+
+test("fresh handling: Fruits & Vegetables has exactly three steps; other categories none", () => {
+  const fv = freshHandlingFor("Fruits & Vegetables");
+  assert.ok(fv);
+  assert.equal(fv!.steps.length, 3);
+  assert.equal(fv!.badge, "3-step sanitized");
+  assert.equal(freshHandlingFor("Dairy"), null);
+  assert.equal(freshHandlingFor(null), null);
+  for (const h of Object.values(FRESH_HANDLING)) assert.equal(h.steps.length, 3);
+});

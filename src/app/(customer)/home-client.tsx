@@ -9,6 +9,8 @@ import { ProductCard } from "@/components/customer/product-card";
 import { CategoryBar } from "@/components/customer/category-bar";
 import { CategoryGrid } from "@/components/customer/category-grid";
 import { SubcategoryStrip } from "@/components/customer/subcategory-strip";
+import { SanitizedSteps } from "@/components/customer/sanitized-steps";
+import { freshHandlingFor } from "@/lib/fresh-handling";
 import { AgeGate } from "@/components/customer/age-gate";
 import {
   useAgeGateStore,
@@ -386,6 +388,11 @@ function HomeContent({
                   selected={selectedSub}
                   onSelect={setSelectedSub}
                 />
+              )}
+              {/* Fresh-produce promise (src/lib/fresh-handling.ts) — only on a
+                  picked category that has one, never on search results. */}
+              {selectedCategory && !debouncedSearch && freshHandlingFor(selectedCategory) && (
+                <SanitizedSteps handling={freshHandlingFor(selectedCategory)!} className="mb-4" />
               )}
               {/^popat/i.test(debouncedSearch.trim()) && viewProducts.length > 0 && (
                 <PopatStaticBanner variant="tea-time" className="mb-4" alt="Popat Namkeen — tea-time favourites" />

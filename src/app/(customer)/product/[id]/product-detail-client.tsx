@@ -35,6 +35,8 @@ import { isDemoMode } from "@/lib/supabase/helpers";
 import { shuffleForGrid } from "@/lib/product-order";
 import { familyName, packagingType, siblingKey } from "@/lib/product-name";
 import { effectiveReturnPolicy, formatReportWindow } from "@/lib/policy";
+import { freshHandlingFor } from "@/lib/fresh-handling";
+import { SanitizedSteps } from "@/components/customer/sanitized-steps";
 import { useStoreAvailability } from "@/lib/hooks/use-availability";
 import { useSettings } from "@/lib/store/settings";
 import type { CustomerCare, ProductVariant } from "@/types";
@@ -246,6 +248,7 @@ export function ProductDetailClient() {
   const sellableLabel = hasVariants ? `${titleName} (${displayUnit})` : product.name;
   const showSiblingPicker = !hasVariants && siblings.length > 1;
   const policy = effectiveReturnPolicy(product.category?.name);
+  const freshHandling = freshHandlingFor(product.category?.name);
   const brandCare = isPlaceholderCare(product.customer_care) ? null : product.customer_care;
   // (Image gallery hooks are declared earlier — before any early returns —
   // so React's hook order rule isn't violated.)
@@ -672,6 +675,13 @@ export function ProductDetailClient() {
                   ["FSSAI", product.seller_fssai],
                 ]}
               />
+            </Section>
+          )}
+
+          {/* Fresh-produce handling promise (src/lib/fresh-handling.ts) */}
+          {freshHandling && (
+            <Section title={freshHandling.title}>
+              <SanitizedSteps handling={freshHandling} variant="section" />
             </Section>
           )}
 
