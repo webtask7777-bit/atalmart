@@ -523,6 +523,17 @@ function OrderCard({
         <MapPin size={15} className="text-saffron shrink-0 mt-0.5" />
         <span>{order.address_line}</span>
       </div>
+      {/* Pin dropped by the customer → exact. Otherwise the map/Navigate point
+          is only the sector centre; the rider must go by the address text. */}
+      {order.zone_source === "point" ? (
+        <p className="text-[11px] font-semibold text-indian-green -mt-1">
+          📍 Exact location (customer ne pin kiya)
+        </p>
+      ) : (
+        <p className="text-[11px] font-semibold text-amber-700 -mt-1">
+          ⚠️ Approx. location — address text se dhundhein, zaroorat ho to call karein
+        </p>
+      )}
 
       {/* Inline drop-location preview (Navigate button below opens full maps app) */}
       <OrderMap lat={order.lat} lng={order.lng} />

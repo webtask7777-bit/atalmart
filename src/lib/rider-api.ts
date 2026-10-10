@@ -26,6 +26,10 @@ export interface RiderOrder {
   phone: string | null;
   payment_method: string | null;
   placed_at: string;
+  /** How lat/lng was resolved (migration 022): "point" = customer's pin
+   *  (exact); "pincode" = sector centroid (approximate); "unresolved"/null =
+   *  unknown. */
+  zone_source?: "point" | "pincode" | "unresolved" | null;
   items: { product_name: string; quantity: number }[];
   customer: { name: string | null } | null;
 }

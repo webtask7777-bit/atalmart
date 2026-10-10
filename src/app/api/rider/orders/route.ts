@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const { data, error } = await ctx!.supabase
     .from("orders")
     .select(
-      "id, status, total, delivery_fee, address_line, lat, lng, phone, payment_method, placed_at, items:order_items(product_name, quantity), customer:profiles(name)",
+      "id, status, total, delivery_fee, address_line, lat, lng, phone, payment_method, placed_at, zone_source, items:order_items(product_name, quantity), customer:profiles(name)",
     )
     .eq("rider_id", ctx!.riderId)
     .in("status", ACTIVE_STATUSES)

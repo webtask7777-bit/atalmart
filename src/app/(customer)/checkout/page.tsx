@@ -20,6 +20,7 @@ import { useCartStore, useCartHydrated } from "@/lib/store/cart";
 import { useCouponStore } from "@/lib/store/coupon";
 import { useWalletStore } from "@/lib/store/wallet";
 import { useAddressStore, type SavedAddress } from "@/lib/store/addresses";
+import { PinDropPicker } from "@/components/customer/pin-drop-picker";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { createOrder } from "@/lib/hooks/use-orders";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export default function CheckoutPage() {
   const coupon = useCouponStore((s) => s.applied);
   const clearCoupon = useCouponStore((s) => s.clear);
   const myCouponUsage = useCouponStore((s) => s.myUsage);
-  const { addresses, selectedId, select } = useAddressStore();
+  const { addresses, selectedId, select, update: updateAddress } = useAddressStore();
   const settings = useSettings();
   const {
     deliveryFee: DELIVERY_FEE,
@@ -78,6 +79,12 @@ export default function CheckoutPage() {
   const spendFromWallet = useWalletStore((s) => s.spend);
 
   const [useSaved, setUseSaved] = useState(addresses.length > 0);
+  // Exact drop point. A typed address only resolves to the SECTOR centroid on
+  // the server (zone_source = "pincode"), which sends the rider to the wrong
+  // street; a pin resolves to the real door. Required for every order.
+  const [newPin, setNewPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [savedPin, setSavedPin] = useState<{ lat: number; lng: number } | null>(null);
+  const [pinInService, setPinInService] = useState<boolean | null>(null);
   const [recipientName, setRecipientName] = useState("");
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -160,10 +167,13 @@ export default function CheckoutPage() {
   // A saved address may carry a dropped map pin. Send it: the server treats
   // a pin as authoritative over the typed pincode, so an address just outside
   // the sector boundary is refused even when its pincode is serviceable.
-  const deliveryPin =
-    useSaved && selectedAddr?.lat != null && selectedAddr?.lng != null
+  const savedAddrPin =
+    selectedAddr?.lat != null && selectedAddr?.lng != null
       ? { lat: selectedAddr.lat, lng: selectedAddr.lng }
       : null;
+  const deliveryPin = useSaved ? savedAddrPin ?? savedPin : newPin;
+  // Saved address picked but it was stored without a pin → ask for one here.
+  const needsSavedPin = useSaved && !!selectedAddr && !savedAddrPin;
 
   const handlePlaceOrder = async () => {
     let finalName = recipientName.trim();
@@ -191,6 +201,22 @@ export default function CheckoutPage() {
     if (!finalAddress) return toast.error("Please enter delivery address");
     const phoneErr = validatePhone10(finalPhone);
     if (phoneErr) return toast.error(phoneErr);
+    if (!deliveryPin) {
+      return toast.error(
+        "Map par apni exact location pin karein — rider ko sahi ghar tak pahunchne ke liye zaroori hai.",
+        { duration: 6000 },
+      );
+    }
+    if (pinInService === false) {
+      return toast.error(
+        "Pin ki hui jagah abhi hamare delivery area ke bahar hai. Pin ko service area ke andar rakhein.",
+        { duration: 6000 },
+      );
+    }
+    // Remember the pin on the saved address so it is not asked again.
+    if (needsSavedPin && selectedAddr && savedPin) {
+      updateAddress(selectedAddr.id, { lat: savedPin.lat, lng: savedPin.lng });
+    }
 
     // ── Service-area enforcement ─────────────────────────────
     // Extract pincode (last 6-digit sequence) from address line, or fall back
@@ -476,6 +502,22 @@ export default function CheckoutPage() {
               <Plus size={14} />
               Add new address
             </Link>
+            {needsSavedPin && (
+              <div className="pt-2">
+                <p className="text-sm font-medium text-brown-light mb-2">
+                  Is address par exact location pin karein{" "}
+                  <span className="text-red-500">*</span>
+                  <span className="block text-xs text-gray-500 font-normal">
+                    Ek baar pin kar dein — agle order par nahi poochha jayega.
+                  </span>
+                </p>
+                <PinDropPicker
+                  value={savedPin}
+                  onChange={setSavedPin}
+                  onValidate={(r) => setPinInService(r.in_service)}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <>
@@ -498,6 +540,20 @@ export default function CheckoutPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
             />
+            <div className="mt-3">
+              <p className="text-sm font-medium text-brown-light mb-2">
+                Map par exact location pin karein <span className="text-red-500">*</span>
+                <span className="block text-xs text-gray-500 font-normal">
+                  &quot;Meri location&quot; dabayein ya pin ko apne ghar par kheenchein — rider seedha
+                  wahin aayega.
+                </span>
+              </p>
+              <PinDropPicker
+                value={newPin}
+                onChange={setNewPin}
+                onValidate={(r) => setPinInService(r.in_service)}
+              />
+            </div>
             {addresses.length === 0 && (
               <p className="text-xs text-gray-500 mt-2">
                 💡 Save addresses in{" "}
