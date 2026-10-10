@@ -51,7 +51,7 @@ export function SanitizedSteps({
       className={`rounded-2xl border border-green-200 bg-green-light/60 px-3 py-2.5 ${className}`}
     >
       <div className="flex items-center gap-2 mb-2">
-        <span className="inline-flex items-center gap-1 bg-indian-green text-white text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full uppercase">
+        <span className="inline-flex items-center gap-1 bg-indian-green text-white text-[10px] font-bold tracking-wide px-2 py-0.5 rounded-full uppercase whitespace-nowrap shrink-0">
           ✓ {handling.badge}
         </span>
         <p className="text-[13px] font-semibold text-brown leading-tight">{handling.title}</p>
@@ -65,7 +65,11 @@ export function SanitizedSteps({
             <p className="text-[12px] font-semibold text-brown leading-tight">
               <span className="text-gray-400 font-normal">{i + 1}.</span> {s.title}
             </p>
-            <p className="text-[11px] text-brown-light leading-snug line-clamp-2">{s.detail}</p>
+            {/* Details only from tablet up; on phones the titles carry it and
+                the PDP has the full text. */}
+            <p className="hidden sm:block text-[11px] text-brown-light leading-snug line-clamp-2">
+              {s.detail}
+            </p>
           </li>
         ))}
       </ol>
