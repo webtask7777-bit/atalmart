@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="102.4" fill="#FF6B00"/>
-  <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" font-family="Arial,sans-serif" font-weight="bold" font-size="256" fill="white">A</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Atalmart A app icon"><title>Atalmart A app icon</title><desc>DRAFT: Helvetica Bold source unavailable. Nimbus Sans Bold outlines used pending exact-font replacement.</desc><rect x="0" y="0" width="1024" height="1024" rx="225.28" fill="#FF6B03"/><g transform="translate(176 864) scale(0.921811 -0.921811)"><path id="letter-A" fill="#FFFFFF" d="M501 147 549 0H703L451 729H285L26 0H179L228 147ZM460 272H270L365 557Z"/><path id="green-crossbar" fill="#008236" d="M228 147H501L460 272H270Z"/></g></svg>
