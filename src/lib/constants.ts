@@ -42,6 +42,14 @@ export const SUPPORT_PHONE = "7777066666";
 export const SUPPORT_EMAIL = "support@atalmart.com";
 
 /**
+ * Trademark symbol shown with the wordmark. "tm" while the "Atalmart"
+ * application is unfiled/pending; flip to "registered" the day the
+ * certificate arrives (Trade Marks Act s.107: ® only on a registered mark).
+ * Drives <Logo/>, the OG image and the brand-kit default files.
+ */
+export const BRAND_MARK: "tm" | "registered" | "none" = "tm";
+
+/**
  * Regulatory IDs shown in the footer / legal pages. Leave `null` until the
  * real number is issued — a null renders NOTHING (never a placeholder).
  * FSSAI: 14-digit food business licence. GSTIN: 15-character GST number.

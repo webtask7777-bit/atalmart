@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BRAND_MARK } from "@/lib/constants";
 
 // Site-wide social preview (WhatsApp / Instagram / X link cards). Generated
 // at build time; product pages override it with their own og:image.
@@ -52,7 +53,7 @@ export default function OpenGraphImage() {
                 letterSpacing: 0,
               }}
             >
-              ®
+              {BRAND_MARK === "registered" ? "®" : BRAND_MARK === "tm" ? "™" : ""}
             </span>
           </div>
         </div>
