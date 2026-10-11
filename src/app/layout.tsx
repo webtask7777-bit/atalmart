@@ -158,8 +158,13 @@ export default function RootLayout({
         />
         {children}
         <PWAProvider />
+        {/* Toasts sit just below the sticky header (banner + bar: 91 px on
+            desktop, 119 px with the search row on phones) so they never cover
+            the search box; sonner goes full-width on phones. */}
         <Toaster
           position="top-center"
+          offset={{ top: 100 }}
+          mobileOffset={{ top: 128, left: 12, right: 12 }}
           toastOptions={{
             style: {
               background: "#FF6B00",

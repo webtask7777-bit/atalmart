@@ -1,4 +1,5 @@
 import { Mail, MapPin, Phone } from "lucide-react";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 import { APP_NAME } from "@/lib/constants";
 import { DEFAULT_REPORT_WINDOW_HOURS } from "@/lib/policy";
 
@@ -13,8 +14,8 @@ const CARDS = [
   {
     icon: Mail,
     label: "Email",
-    value: "webtask7777@gmail.com",
-    href: "mailto:webtask7777@gmail.com",
+    value: SUPPORT_EMAIL,
+    href: `mailto:${SUPPORT_EMAIL}`,
   },
   {
     icon: Phone,

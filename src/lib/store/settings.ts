@@ -55,7 +55,7 @@ const DEFAULTS: SiteSettings = {
   appName: "Atalmart",
   tagline: "Atal Nagar ki Atal Delivery",
   storeAddress: "Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101",
-  contactEmail: "webtask7777@gmail.com",
+  contactEmail: "support@atalmart.com",
   contactPhone: "+91 7777066666", // Vivek's real support number (confirmed 2026-07-21)
   deliveryFee: 25,
   freeDeliveryAbove: 299,

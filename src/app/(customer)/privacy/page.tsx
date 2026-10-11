@@ -1,4 +1,5 @@
 import { APP_NAME, LEGAL_LAST_UPDATED } from "@/lib/constants";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 
 export const metadata = {
   title: "Privacy Policy",
@@ -80,10 +81,10 @@ export default function PrivacyPage() {
             You can request access to, correction of, or deletion of your
             personal data by writing to{" "}
             <a
-              href="mailto:webtask7777@gmail.com"
+              href={`mailto:${SUPPORT_EMAIL}`}
               className="text-saffron hover:underline"
             >
-              webtask7777@gmail.com
+              {SUPPORT_EMAIL}
             </a>
             .
           </p>

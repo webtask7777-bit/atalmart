@@ -1,4 +1,5 @@
 import { paymentMethodLabel } from "@/lib/constants";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 import { NextRequest, NextResponse } from "next/server";
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from "pdf-lib";
 import { isDemoMode } from "@/lib/supabase/helpers";
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
     storeAddress:
       storeSettings?.storeAddress ||
       "Sector 27, Atal Nagar-Nava Raipur, Chhattisgarh 492101",
-    contactEmail: storeSettings?.contactEmail || "webtask7777@gmail.com",
+    contactEmail: storeSettings?.contactEmail || SUPPORT_EMAIL,
     // No placeholder fallback — print phone only if the admin has set a real one.
     contactPhone: storeSettings?.contactPhone || "",
   };

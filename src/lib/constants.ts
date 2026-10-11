@@ -39,7 +39,7 @@ export const UPI_PAYEE_NAME = "Atalmart";
 
 /** Customer support contact — the only phone/email shown anywhere. */
 export const SUPPORT_PHONE = "7777066666";
-export const SUPPORT_EMAIL = "webtask7777@gmail.com";
+export const SUPPORT_EMAIL = "support@atalmart.com";
 
 /**
  * Regulatory IDs shown in the footer / legal pages. Leave `null` until the

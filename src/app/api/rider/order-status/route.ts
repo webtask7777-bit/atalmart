@@ -38,7 +38,7 @@ export async function POST(req: Request) {
   // Verify ownership.
   const { data: order, error: fetchErr } = await ctx!.supabase
     .from("orders")
-    .select("id, rider_id, status")
+    .select("id, rider_id, status, payment_method")
     .eq("id", orderId)
     .maybeSingle();
   if (fetchErr) {
@@ -66,6 +66,27 @@ export async function POST(req: Request) {
     .eq("id", orderId);
   if (updErr) {
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
+
+  // Cash handed over at the door: stamp the COD ledger (migration 023) so the
+  // admin's COD settlement screen knows this rider is now holding the money.
+  // Collected = expected unless the admin adjusts it later.
+  if (status === "delivered" && order.payment_method === "cod") {
+    try {
+      const { data: cod } = await ctx!.supabase
+        .from("cod_collections")
+        .select("expected_paise, collected_at")
+        .eq("order_id", orderId)
+        .maybeSingle();
+      if (cod && !cod.collected_at) {
+        await ctx!.supabase
+          .from("cod_collections")
+          .update({ collected_paise: cod.expected_paise, collected_at: new Date().toISOString() })
+          .eq("order_id", orderId);
+      }
+    } catch {
+      /* ledger is best-effort; delivery already recorded */
+    }
   }
 
   // Keep rider availability honest.

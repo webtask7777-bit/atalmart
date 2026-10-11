@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -195,7 +196,7 @@ export default function WalletPage() {
       {/* Footer note */}
       <p className="text-[11px] text-gray-500 mt-4 text-center leading-relaxed">
         Wallet credits never expire on refunds. Promo credits may have an
-        expiry. For questions, contact webtask7777@gmail.com
+        expiry. For questions, contact {SUPPORT_EMAIL}
       </p>
     </div>
   );

@@ -20,6 +20,7 @@ import {
   Truck,
   Percent,
   Receipt,
+  Banknote,
   FileSpreadsheet,
 } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
@@ -56,6 +57,7 @@ const navGroups: NavGroup[] = [
       { href: "/admin/purchases", label: "Purchases", icon: Truck },
       { href: "/admin/pricing", label: "Pricing & Margins", icon: Percent },
       { href: "/admin/pnl", label: "Profit & Loss", icon: Receipt },
+      { href: "/admin/cod", label: "COD Cash", icon: Banknote },
       { href: "/admin/reports", label: "Reports", icon: FileSpreadsheet },
     ],
   },

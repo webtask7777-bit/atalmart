@@ -1282,7 +1282,7 @@ export default function AdminProductsPage() {
                   label="Customer Care Email"
                   value={form.customer_care_email}
                   onChange={(e) => updateField("customer_care_email", e.target.value)}
-                  placeholder="webtask7777@gmail.com"
+                  placeholder="support@atalmart.com"
                 />
                 <Input
                   label="Customer Care Phone"

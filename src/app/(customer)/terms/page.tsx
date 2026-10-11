@@ -1,4 +1,5 @@
 import { APP_NAME, LEGAL_LAST_UPDATED } from "@/lib/constants";
+import { SUPPORT_EMAIL } from "@/lib/constants";
 
 export const metadata = {
   title: "Terms & Conditions",
@@ -127,10 +128,10 @@ export default function TermsPage() {
           <p>
             For questions about these terms, reach us at{" "}
             <a
-              href="mailto:webtask7777@gmail.com"
+              href={`mailto:${SUPPORT_EMAIL}`}
               className="text-saffron hover:underline"
             >
-              webtask7777@gmail.com
+              {SUPPORT_EMAIL}
             </a>
             .
           </p>
